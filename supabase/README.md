@@ -1,0 +1,129 @@
+# Supabase schema (Penaltyboxd)
+
+Migrations implement the locked design in [`../../DATABASE.md`](../../DATABASE.md).
+
+**Project:** `cznywzmmqypprsmulxty` (configure in `config.toml`)
+
+## Migrations
+
+| Version | Name | Contents |
+|---------|------|----------|
+| `20260529041735` | `init_extensions_and_catalog` | `pg_trgm`, catalog tables, WC league seed |
+| `20260529050000` | `init_profiles_ratings` | Profiles, ratings, aggregate cache tables, auth bootstrap |
+| `20260529050001` | `init_comments_admin` | Comments, votes, trending, team of the week, T5 league stubs |
+| `20260529050002` | `init_rls_policies` | RLS on all tables (`(select auth.uid())` pattern) |
+| `20260529050003` | `init_aggregate_triggers` | Career/match/form/tournament aggregates + comment vote counts |
+| `20260529050004` | `init_function_security` | `search_path` + revoke public execute on internal functions |
+
+## Apply locally
+
+```bash
+npx supabase link --project-ref cznywzmmqypprsmulxty
+npx supabase db push
+```
+
+Regenerate TypeScript types:
+
+```bash
+npx supabase gen types typescript --project-id cznywzmmqypprsmulxty > lib/database.types.ts
+```
+
+## Catalog sync (Postman)
+
+Server routes under `/api/admin/sync/*`. Start dev server: `npm run dev` in `trackballer/`.
+
+### Postman setup
+
+1. **Authorization** tab → Type **Bearer Token** → Token = your `SYNC_ADMIN_SECRET` value from `.env.local`.
+2. Or add header: `x-sync-secret` = same value.
+3. Base URL: `http://localhost:3000` (no `curl` needed — `curl.exe` in docs is only for Windows terminals).
+
+| Method | URL | Body |
+|--------|-----|------|
+| `GET` | `http://localhost:3000/api/admin/sync/status?seasonYear=2022` | none |
+| `POST` | `http://localhost:3000/api/admin/sync/bootstrap` | optional — see **Bootstrap** below |
+| `POST` | `http://localhost:3000/api/admin/sync/fixture-details/pending` | optional — **skips** fixtures with `lineups_synced_at` set |
+| `POST` | `http://localhost:3000/api/admin/sync/fixture/855736` | none (replace id) |
+| `POST` | `http://localhost:3000/api/admin/sync/player/891` | `{"seasonYear":2022}` optional |
+| `POST` | `http://localhost:3000/api/admin/sync/players/repair` | `{"limit":30,"seasonYear":2022}` optional |
+
+### Bootstrap (`POST /api/admin/sync/bootstrap`)
+
+Same URL; behaviour depends on the body:
+
+| Request | What runs |
+|---------|-----------|
+| **No body** (or `{}`) | Catalog only: rounds, 64 fixtures, teams, squads — **no** lineups/events |
+| `{"syncFixtureDetails":true}` | Catalog **plus** detail for **all 64** terminal matches (re-syncs the 8 you already have) |
+
+Catalog-only (typical first run):
+
+```bash
+curl --location --request POST 'http://localhost:3000/api/admin/sync/bootstrap' \
+  --header 'Authorization: Bearer YOUR_SYNC_SECRET'
+```
+
+### Pending fixture details (resume after rate limit)
+
+Skips fixtures where `lineups_synced_at` is already set (your 8 Group Stage 1 games). Only hits the **~56** missing matches. **3 API calls per fixture.**
+
+```bash
+curl --location --request POST 'http://localhost:3000/api/admin/sync/fixture-details/pending' \
+  --header 'Authorization: Bearer YOUR_SYNC_SECRET' \
+  --header 'Content-Type: application/json' \
+  --data '{"seasonYear":2022,"limit":10}'
+```
+
+Omit `limit` to process all pending in one run (~168 API calls). Re-run until `pending` in the response is `0`.
+
+### Env (`trackballer/.env.local`)
+
+```env
+SUPABASE_SECRET_KEY=...
+API_FOOTBALL_KEY=...
+API_FOOTBALL_LEAGUE_ID=1
+API_FOOTBALL_SEASON=2022
+SYNC_ADMIN_SECRET=your-long-secret
+# Free tier: 10 requests/minute (default). Override if your plan differs:
+API_FOOTBALL_REQUESTS_PER_MINUTE=10
+```
+
+### API-Football rate limit
+
+The sync client **serializes** every API-Football call (~6.5s apart at 10 req/min). Do not run bootstrap twice in parallel.
+
+| Step | API calls (approx.) | Time at 10/min |
+|------|---------------------|----------------|
+| Status | 0 | instant |
+| Bootstrap (catalog only) | ~42 | **~5 min** |
+| Bootstrap + all fixture details | ~234 | **~40 min** |
+| Pending fixture details | 3 × pending count | 3 × 56 ≈ **18 min** if 56 left |
+| One fixture detail | 3 | ~20s |
+
+If you hit `429`, the client waits ~65s and retries once. Optional: `API_FOOTBALL_MIN_INTERVAL_MS=7000` for extra headroom.
+
+### Player profile repair
+
+Fixture event sync used to write `Player {id}` when the API omitted names. Stub upserts now **merge** and never downgrade a real name. To fix existing rows:
+
+```bash
+# One player (Postman import)
+curl --location --request POST 'http://localhost:3000/api/admin/sync/player/891' \
+  --header 'Authorization: Bearer YOUR_SYNC_SECRET' \
+  --header 'Content-Type: application/json' \
+  --data '{"seasonYear":2022}'
+
+# Batch: placeholder names + appearance players missing national_team_id (default limit 30)
+curl --location --request POST 'http://localhost:3000/api/admin/sync/players/repair' \
+  --header 'Authorization: Bearer YOUR_SYNC_SECRET' \
+  --header 'Content-Type: application/json' \
+  --data '{"limit":30,"seasonYear":2022}'
+```
+
+Re-run repair until `candidates` in the response is `0` (or run with a higher `limit` when quota allows).
+
+## Notes
+
+- **Catalog writes** use the service role (sync jobs only), not the anon key.
+- **Match ratings** require `fixtures.ratings_unlocked_at` and `fixture_appearances.is_rateable` (enforced in RLS).
+- **Career display** uses FM blend until 10 votes; tiers from `tier_for_score()`.
