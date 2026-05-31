@@ -1,31 +1,75 @@
 import Link from "next/link"
 
-import { getFixtureCount } from "@/lib/supabase/catalog-read"
+import {
+  getLatestResults,
+  getUpcomingFixtures,
+  getWorldCupCatalogContext,
+} from "@/lib/catalog/fixtures"
 
-export default async function WorldCupPage() {
-  const fixtureCount = await getFixtureCount()
+type PageProps = {
+  searchParams: Promise<{ round?: string }>
+}
+
+export default async function WorldCupPage({ searchParams }: PageProps) {
+  const { round: roundFilter } = await searchParams
+  const { season, rounds, fixtureCount } = await getWorldCupCatalogContext()
+
+  const roundName =
+    roundFilter && roundFilter.length > 0 ? decodeURIComponent(roundFilter) : undefined
+
+  const [upcoming, results] = season
+    ? await Promise.all([
+        getUpcomingFixtures(season.id, { roundName, limit: 8 }),
+        getLatestResults(season.id, { roundName, limit: 8 }),
+      ])
+    : [[], []]
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <p className="eyebrow mb-2">FIFA World Cup</p>
       <h1 className="h-display mb-2">World Cup 2026</h1>
-      <p className="body-sm mb-8 text-muted-foreground">
-        Group stage, results, and standings from your synced catalog.
+      <p className="body-sm mb-6 text-muted-foreground">
+        {season
+          ? `Season ${season.year} catalog${roundName ? ` · ${roundName}` : ""}`
+          : "Season not found in database."}
       </p>
 
-      <section className="rounded-lg border border-border bg-card p-4">
-        <h2 className="h3 mb-1">Catalog status</h2>
+      <section className="mb-6 rounded-lg border border-border bg-card p-4">
+        <h2 className="h3 mb-2">Tournament data</h2>
         <p className="body-sm text-muted-foreground">
           {fixtureCount === null
-            ? "Could not load fixtures. Check Supabase env vars in .env."
-            : `${fixtureCount} fixtures in database (dev season).`}
+            ? "Could not load fixtures."
+            : `${fixtureCount} fixtures · ${rounds.length} rounds · ${upcoming.length} upcoming · ${results.length} results shown`}
         </p>
-        <p className="caption mt-3">
-          Upcoming fixtures, results, and round filters land in the next issues.
-        </p>
+        {rounds.length > 0 && (
+          <ul className="caption mt-2 list-inside list-disc">
+            {rounds.slice(0, 4).map((r) => (
+              <li key={r.id}>{r.name}</li>
+            ))}
+            {rounds.length > 4 && <li>…and {rounds.length - 4} more</li>}
+          </ul>
+        )}
       </section>
 
-      <p className="body-sm mt-6">
+      {results.length > 0 && (
+        <section className="mb-6">
+          <h2 className="h3 mb-2">Latest results (preview)</h2>
+          <ul className="space-y-2">
+            {results.map((f) => (
+              <li key={f.id} className="body-sm rounded-md border border-border px-3 py-2">
+                <Link href={`/match/${f.id}`} className="hover:underline">
+                  {f.home_team.name} vs {f.away_team.name}
+                  {f.home_goals_ft != null && f.away_goals_ft != null
+                    ? ` · ${f.home_goals_ft}-${f.away_goals_ft} ${f.status_short}`
+                    : ` · ${f.status_short}`}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <p className="body-sm">
         <Link href="/" className="text-primary underline-offset-4 hover:underline">
           Back to home
         </Link>
