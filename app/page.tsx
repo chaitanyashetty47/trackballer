@@ -1,19 +1,12 @@
-import { Button } from "@/components/ui/button"
-
-export default function Page() {
+export default function HomePage() {
   return (
-    <div className="flex min-h-svh p-6">
-      <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-        <div>
-          <h1 className="font-medium">Project ready!</h1>
-          <p>You may now add components and start building.</p>
-          <p>We&apos;ve already added the button component for you.</p>
-          <Button className="mt-2">Button</Button>
-        </div>
-        <div className="font-mono text-xs text-muted-foreground">
-          (Press <kbd>d</kbd> to toggle dark mode)
-        </div>
-      </div>
+    <div className="mx-auto max-w-2xl px-4 py-8">
+      <p className="eyebrow mb-2">Fan ratings</p>
+      <h1 className="h-display mb-3">Rate the beautiful game</h1>
+      <p className="body-sm max-w-md text-muted-foreground">
+        Match performances, career scores, and World Cup fixtures. Start with the
+        tournament hub.
+      </p>
     </div>
   )
 }

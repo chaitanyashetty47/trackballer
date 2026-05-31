@@ -1,15 +1,28 @@
-import { Geist, Geist_Mono, Inter } from "next/font/google"
+import { Figtree, Geist_Mono, Outfit } from "next/font/google"
 
 import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
-import { cn } from "@/lib/utils";
+import { AppShell } from "@/components/app-shell"
+import { cn } from "@/lib/utils"
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'})
+const figtree = Figtree({
+  subsets: ["latin"],
+  variable: "--font-sans",
+})
 
-const fontMono = Geist_Mono({
+const outfit = Outfit({
+  subsets: ["latin"],
+  variable: "--font-display",
+})
+
+const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
 })
+
+export const metadata = {
+  title: "Penaltyboxd",
+  description: "Rate the beautiful game",
+}
 
 export default function RootLayout({
   children,
@@ -19,11 +32,15 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
+      className={cn(
+        "antialiased",
+        figtree.variable,
+        outfit.variable,
+        geistMono.variable,
+      )}
     >
-      <body>
-        <ThemeProvider>{children}</ThemeProvider>
+      <body className="min-h-svh bg-background font-sans text-foreground">
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   )
