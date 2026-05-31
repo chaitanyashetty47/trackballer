@@ -30,6 +30,12 @@ export async function POST(request: NextRequest) {
     return jsonError("Invalid JSON body", 400);
   }
 
+  console.log("[catalog-sync]", "POST /fixture-details/pending", {
+    leagueId: body.leagueId ?? null,
+    seasonYear: body.seasonYear ?? null,
+    limit: body.limit ?? null,
+  });
+
   const sync = createCatalogSync();
   return runSync(
     () =>

@@ -43,7 +43,44 @@ export type FixtureDetailStats = {
   appearances: number;
   events: number;
   skippedEmptyLineups: boolean;
+  /** Raw API `response` array lengths (for diagnosis). */
+  apiResponseCounts: {
+    lineups: number;
+    playerBlocks: number;
+    events: number;
+  };
 };
+
+const SYNC_LOG = "[catalog-sync]";
+
+function syncLog(
+  message: string,
+  data?: Record<string, unknown>,
+): void {
+  if (data !== undefined) {
+    console.log(SYNC_LOG, message, data);
+  } else {
+    console.log(SYNC_LOG, message);
+  }
+}
+
+function apiMeta(res: {
+  get: string;
+  results: number;
+  errors: string[] | Record<string, string>;
+  response: unknown[];
+}) {
+  const errors = res.errors;
+  const hasErrors = Array.isArray(errors)
+    ? errors.length > 0
+    : Object.keys(errors ?? {}).length > 0;
+  return {
+    endpoint: res.get,
+    results: res.results,
+    responseLength: res.response.length,
+    errors: hasErrors ? errors : undefined,
+  };
+}
 
 export type PlayerProfileStats = {
   playerId: number;
@@ -81,12 +118,85 @@ export type PendingFixtureDetailsStats = {
   failures: Array<{ fixtureId: number; error: string }>;
 };
 
+export type FixtureSyncState = "pending" | "partial" | "complete";
+
+export type FixtureSyncHealthRow = {
+  fixtureId: number;
+  roundName: string | null;
+  homeTeam: string;
+  awayTeam: string;
+  statusShort: string;
+  state: FixtureSyncState;
+  lineupsSyncedAt: string | null;
+  appearancesSyncedAt: string | null;
+  lineupCount: number;
+  appearanceCount: number;
+  eventCount: number;
+};
+
+export type FixtureSyncHealthReport = {
+  seasonYear: number;
+  seasonId: number;
+  summary: {
+    total: number;
+    pending: number;
+    partial: number;
+    complete: number;
+  };
+  /** No lineups yet — use POST /fixture-details/pending or /fixture/:id */
+  pendingFixtureIds: number[];
+  /** Lineups saved but appearances/events incomplete — re-run POST /fixture/:id */
+  partialFixtureIds: number[];
+  completeFixtureIds: number[];
+  fixtures: FixtureSyncHealthRow[];
+};
+
 function dedupeById<T extends { id: number }>(rows: T[]): T[] {
   const map = new Map<number, T>();
   for (const row of rows) {
     map.set(row.id, row);
   }
   return [...map.values()];
+}
+
+/** PostgREST returns at most 1000 rows per request unless paginated. */
+const SUPABASE_PAGE_SIZE = 1000;
+
+type FixtureChildTable =
+  | "fixture_lineups"
+  | "fixture_appearances"
+  | "fixture_events";
+
+async function countRowsByFixtureId(
+  db: Db,
+  table: FixtureChildTable,
+  fixtureIds: number[],
+): Promise<Map<number, number>> {
+  const counts = new Map<number, number>();
+  if (fixtureIds.length === 0) return counts;
+
+  let offset = 0;
+  while (true) {
+    const { data, error } = await db
+      .from(table)
+      .select("fixture_id")
+      .in("fixture_id", fixtureIds)
+      .order("id", { ascending: true })
+      .range(offset, offset + SUPABASE_PAGE_SIZE - 1);
+
+    if (error) throw error;
+    const batch = data ?? [];
+    if (batch.length === 0) break;
+
+    for (const row of batch) {
+      counts.set(row.fixture_id, (counts.get(row.fixture_id) ?? 0) + 1);
+    }
+
+    if (batch.length < SUPABASE_PAGE_SIZE) break;
+    offset += SUPABASE_PAGE_SIZE;
+  }
+
+  return counts;
 }
 
 export class CatalogSync {
@@ -452,6 +562,17 @@ export class CatalogSync {
     const batch =
       options.limit != null ? pendingIds.slice(0, options.limit) : pendingIds;
 
+    syncLog("pending fixture-details batch start", {
+      leagueId,
+      seasonYear,
+      seasonId: season.id,
+      limit: options.limit ?? null,
+      pendingTotal: pendingIds.length,
+      skippedAlreadySynced: skippedFixtureIds.length,
+      batchSize: batch.length,
+      batchFixtureIds: batch,
+    });
+
     const stats: PendingFixtureDetailsStats = {
       pending: pendingIds.length,
       skipped: skippedFixtureIds.length,
@@ -463,18 +584,27 @@ export class CatalogSync {
     };
 
     for (const fixtureId of batch) {
+      syncLog(`fixture ${fixtureId} — starting detail sync`);
       try {
-        await this.syncFixtureDetail(fixtureId);
+        const detail = await this.syncFixtureDetail(fixtureId);
         stats.syncedFixtureIds.push(fixtureId);
         stats.synced += 1;
+        syncLog(`fixture ${fixtureId} — done`, { ...detail });
       } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
         stats.failed += 1;
-        stats.failures.push({
-          fixtureId,
-          error: err instanceof Error ? err.message : "Unknown error",
-        });
+        stats.failures.push({ fixtureId, error: message });
+        console.error(SYNC_LOG, `fixture ${fixtureId} — failed`, message, err);
       }
     }
+
+    syncLog("pending fixture-details batch complete", {
+      synced: stats.synced,
+      failed: stats.failed,
+      syncedFixtureIds: stats.syncedFixtureIds,
+      failures: stats.failures,
+      remainingPending: pendingIds.length - stats.synced,
+    });
 
     return stats;
   }
@@ -491,35 +621,98 @@ export class CatalogSync {
       appearances: 0,
       events: 0,
       skippedEmptyLineups: false,
+      apiResponseCounts: { lineups: 0, playerBlocks: 0, events: 0 },
     };
 
+    const { data: fxMeta } = await this.db
+      .from("fixtures")
+      .select("status_short, round_name, kickoff_at")
+      .eq("id", fixtureId)
+      .maybeSingle();
+
+    syncLog(`fixture ${fixtureId} — fetching API (lineups → players → events)`, {
+      statusShort: fxMeta?.status_short ?? null,
+      roundName: fxMeta?.round_name ?? null,
+      kickoffAt: fxMeta?.kickoff_at ?? null,
+    });
+
     const lineupsRes = await this.api.getLineups(fixtureId);
+    syncLog(`fixture ${fixtureId} — API lineups`, {
+      ...apiMeta(lineupsRes),
+      quota: this.api.lastQuota,
+    });
+
     const playersRes = await this.api.getFixturePlayers(fixtureId);
+    syncLog(`fixture ${fixtureId} — API players`, {
+      ...apiMeta(playersRes),
+      quota: this.api.lastQuota,
+    });
+
     const eventsRes = await this.api.getFixtureEvents(fixtureId);
+    syncLog(`fixture ${fixtureId} — API events`, {
+      ...apiMeta(eventsRes),
+      quota: this.api.lastQuota,
+    });
 
     const lineups = lineupsRes.response;
+    const playerBlocks = playersRes.response;
+    const events = eventsRes.response;
+
+    result.apiResponseCounts = {
+      lineups: lineups.length,
+      playerBlocks: playerBlocks.length,
+      events: events.length,
+    };
+
     if (lineups.length > 0) {
       const { lineups: lineupRows, playerStubs } = mapLineups(fixtureId, lineups);
+      syncLog(`fixture ${fixtureId} — writing lineups`, {
+        lineupRows: lineupRows.length,
+        playerStubs: playerStubs.length,
+      });
       await this.upsertPlayers(playerStubs);
       await this.db.from("fixture_lineups").delete().eq("fixture_id", fixtureId);
       const { error } = await this.db.from("fixture_lineups").insert(lineupRows);
-      if (error) throw error;
+      if (error) {
+        syncLog(`fixture ${fixtureId} — lineups insert failed`, {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+        });
+        throw error;
+      }
       result.lineups = lineupRows.length;
 
-      await this.db
+      const { error: tsError } = await this.db
         .from("fixtures")
         .update({ lineups_synced_at: now })
         .eq("id", fixtureId);
+      if (tsError) {
+        syncLog(`fixture ${fixtureId} — lineups_synced_at update failed`, {
+          message: tsError.message,
+        });
+        throw tsError;
+      }
+      syncLog(`fixture ${fixtureId} — lineups saved`, {
+        rows: result.lineups,
+        lineups_synced_at: now,
+      });
     } else {
       result.skippedEmptyLineups = true;
+      syncLog(`fixture ${fixtureId} — skipped lineups (API returned empty)`, {
+        note: "lineups_synced_at not set; existing DB rows preserved",
+      });
     }
 
-    const playerBlocks = playersRes.response;
     if (playerBlocks.length > 0) {
       const { appearances, playerStubs } = mapAppearances(
         fixtureId,
         playerBlocks,
       );
+      syncLog(`fixture ${fixtureId} — writing appearances`, {
+        appearances: appearances.length,
+        playerStubs: playerStubs.length,
+      });
       await this.upsertPlayers(playerStubs);
       await this.db
         .from("fixture_appearances")
@@ -528,18 +721,41 @@ export class CatalogSync {
       const { error } = await this.db
         .from("fixture_appearances")
         .insert(appearances);
-      if (error) throw error;
+      if (error) {
+        syncLog(`fixture ${fixtureId} — appearances insert failed`, {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+        });
+        throw error;
+      }
       result.appearances = appearances.length;
 
-      await this.db
+      const { error: tsError } = await this.db
         .from("fixtures")
         .update({ appearances_synced_at: now })
         .eq("id", fixtureId);
+      if (tsError) {
+        syncLog(`fixture ${fixtureId} — appearances_synced_at update failed`, {
+          message: tsError.message,
+        });
+        throw tsError;
+      }
+      syncLog(`fixture ${fixtureId} — appearances saved`, {
+        rows: result.appearances,
+        appearances_synced_at: now,
+      });
+    } else {
+      syncLog(`fixture ${fixtureId} — skipped appearances (API returned empty)`, {
+        note: "appearances_synced_at not set",
+      });
     }
 
-    const events = eventsRes.response;
     if (events.length > 0) {
       const eventRows = mapEvents(fixtureId, events);
+      syncLog(`fixture ${fixtureId} — writing events`, {
+        eventRows: eventRows.length,
+      });
       const playerIds = new Set<number>();
       for (const e of eventRows) {
         if (e.player_id) playerIds.add(e.player_id);
@@ -559,23 +775,52 @@ export class CatalogSync {
 
       await this.db.from("fixture_events").delete().eq("fixture_id", fixtureId);
       const { error } = await this.db.from("fixture_events").insert(eventRows);
-      if (error) throw error;
+      if (error) {
+        syncLog(`fixture ${fixtureId} — events insert failed`, {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+        });
+        throw error;
+      }
       result.events = eventRows.length;
+      syncLog(`fixture ${fixtureId} — events saved`, { rows: result.events });
+    } else {
+      syncLog(`fixture ${fixtureId} — skipped events (API returned empty)`);
     }
 
-    const { data: fixture } = await this.db
-      .from("fixtures")
-      .select("status_short")
-      .eq("id", fixtureId)
-      .single();
-
-    if (fixture && TERMINAL_STATUSES.has(fixture.status_short)) {
+    if (fxMeta && TERMINAL_STATUSES.has(fxMeta.status_short)) {
       await this.db
         .from("fixtures")
         .update({ ratings_unlocked_at: now })
         .eq("id", fixtureId)
         .is("ratings_unlocked_at", null);
     }
+
+    const gaps: string[] = [];
+    if (result.apiResponseCounts.lineups > 0 && result.lineups === 0) {
+      gaps.push("API had lineups but none written");
+    }
+    if (result.apiResponseCounts.playerBlocks > 0 && result.appearances === 0) {
+      gaps.push("API had players but no appearances written");
+    }
+    if (result.apiResponseCounts.events > 0 && result.events === 0) {
+      gaps.push("API had events but none written");
+    }
+    if (result.skippedEmptyLineups && result.apiResponseCounts.events === 0) {
+      gaps.push("no lineups and no events from API");
+    }
+
+    syncLog(`fixture ${fixtureId} — summary`, {
+      api: result.apiResponseCounts,
+      written: {
+        lineups: result.lineups,
+        appearances: result.appearances,
+        events: result.events,
+      },
+      skippedEmptyLineups: result.skippedEmptyLineups,
+      ...(gaps.length > 0 ? { warnings: gaps } : {}),
+    });
 
     return result;
   }
@@ -650,6 +895,111 @@ export class CatalogSync {
         fixture_events: eventCount ?? 0,
       },
       apiQuota: this.api.lastQuota,
+    };
+  }
+
+  /**
+   * Per-fixture sync state from DB timestamps (source of truth after any interrupted run).
+   * - pending: lineups_synced_at IS NULL → not started or failed before lineups saved
+   * - partial: lineups ok but appearances_synced_at IS NULL → interrupted mid-detail
+   * - complete: lineups + appearances synced
+   */
+  async getFixtureSyncHealth(seasonYear?: number): Promise<FixtureSyncHealthReport> {
+    const year =
+      seasonYear ?? Number(process.env.API_FOOTBALL_SEASON ?? 2022);
+    const leagueId = Number(process.env.API_FOOTBALL_LEAGUE_ID ?? 1);
+
+    const { data: season, error: seasonError } = await this.db
+      .from("seasons")
+      .select("id")
+      .eq("league_id", leagueId)
+      .eq("year", year)
+      .maybeSingle();
+
+    if (seasonError) throw seasonError;
+    if (!season) {
+      throw new Error(`Season ${year} not found`);
+    }
+
+    const { data: rows, error } = await this.db
+      .from("fixtures")
+      .select(
+        `
+        id,
+        round_name,
+        status_short,
+        kickoff_at,
+        lineups_synced_at,
+        appearances_synced_at,
+        home_team:teams!fixtures_home_team_id_fkey(name),
+        away_team:teams!fixtures_away_team_id_fkey(name)
+      `,
+      )
+      .eq("season_id", season.id)
+      .in("status_short", [...TERMINAL_STATUSES])
+      .order("kickoff_at", { ascending: true });
+
+    if (error) throw error;
+
+    const fixtureIds = (rows ?? []).map((r) => r.id);
+    const [lineupCounts, appearanceCounts, eventCounts] = await Promise.all([
+      countRowsByFixtureId(this.db, "fixture_lineups", fixtureIds),
+      countRowsByFixtureId(this.db, "fixture_appearances", fixtureIds),
+      countRowsByFixtureId(this.db, "fixture_events", fixtureIds),
+    ]);
+
+    const pendingFixtureIds: number[] = [];
+    const partialFixtureIds: number[] = [];
+    const completeFixtureIds: number[] = [];
+    const fixtures: FixtureSyncHealthRow[] = [];
+
+    for (const fx of rows ?? []) {
+      const home = fx.home_team as { name: string } | null;
+      const away = fx.away_team as { name: string } | null;
+      const lineupCount = lineupCounts.get(fx.id) ?? 0;
+      const appearanceCount = appearanceCounts.get(fx.id) ?? 0;
+      const eventCount = eventCounts.get(fx.id) ?? 0;
+
+      let state: FixtureSyncState;
+      if (!fx.lineups_synced_at) {
+        state = "pending";
+        pendingFixtureIds.push(fx.id);
+      } else if (!fx.appearances_synced_at) {
+        state = "partial";
+        partialFixtureIds.push(fx.id);
+      } else {
+        state = "complete";
+        completeFixtureIds.push(fx.id);
+      }
+
+      fixtures.push({
+        fixtureId: fx.id,
+        roundName: fx.round_name,
+        homeTeam: home?.name ?? "?",
+        awayTeam: away?.name ?? "?",
+        statusShort: fx.status_short,
+        state,
+        lineupsSyncedAt: fx.lineups_synced_at,
+        appearancesSyncedAt: fx.appearances_synced_at,
+        lineupCount,
+        appearanceCount,
+        eventCount,
+      });
+    }
+
+    return {
+      seasonYear: year,
+      seasonId: season.id,
+      summary: {
+        total: fixtures.length,
+        pending: pendingFixtureIds.length,
+        partial: partialFixtureIds.length,
+        complete: completeFixtureIds.length,
+      },
+      pendingFixtureIds,
+      partialFixtureIds,
+      completeFixtureIds,
+      fixtures,
     };
   }
 }
