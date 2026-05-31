@@ -40,7 +40,8 @@ Server routes under `/api/admin/sync/*`. Start dev server: `npm run dev` in `tra
 
 | Method | URL | Body |
 |--------|-----|------|
-| `GET` | `http://localhost:3000/api/admin/sync/status?seasonYear=2022` | none |
+| `GET` | `http://localhost:3000/api/admin/sync/status?seasonYear=2022` | none (row counts) |
+| `GET` | `http://localhost:3000/api/admin/sync/health?seasonYear=2022` | none (**which fixtures** pending / partial / complete) |
 | `POST` | `http://localhost:3000/api/admin/sync/bootstrap` | optional — see **Bootstrap** below |
 | `POST` | `http://localhost:3000/api/admin/sync/fixture-details/pending` | optional — **skips** fixtures with `lineups_synced_at` set |
 | `POST` | `http://localhost:3000/api/admin/sync/fixture/855736` | none (replace id) |
@@ -75,6 +76,23 @@ curl --location --request POST 'http://localhost:3000/api/admin/sync/fixture-det
 ```
 
 Omit `limit` to process all pending in one run (~168 API calls). Re-run until `pending` in the response is `0`.
+
+### Knowing what was interrupted (prod)
+
+The **HTTP response** from `pending` only helps if the request **finished** — check `syncedFixtureIds` and `failures`. If Postman times out, use the DB via **health**:
+
+```bash
+curl --location 'http://localhost:3000/api/admin/sync/health?seasonYear=2022' \
+  --header 'Authorization: Bearer YOUR_SYNC_SECRET'
+```
+
+| `state` | Meaning | What to run |
+|---------|---------|-------------|
+| `pending` | No `lineups_synced_at` — not started or failed before lineups saved | `POST /fixture-details/pending` or `/fixture/:id` |
+| `partial` | Lineups saved, `appearances_synced_at` null — **interrupted mid-detail** | `POST /fixture/:id` for each id in `partialFixtureIds` |
+| `complete` | Lineups + appearances synced | Skip (or re-sync single fixture if you need a refresh) |
+
+Response includes `pendingFixtureIds`, `partialFixtureIds`, and per-match `lineupCount` / `eventCount` for auditing.
 
 ### Env (`trackballer/.env.local`)
 
