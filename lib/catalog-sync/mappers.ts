@@ -50,14 +50,27 @@ export function mapTeamFromFixtureSide(
   };
 }
 
+/** National squads from a competition season (e.g. World Cup). */
 export function mapTeamFromLeague(item: ApiLeagueTeamItem): TeamInsert {
+  return mapTeamFromLeagueItem(item, { isNational: true });
+}
+
+/** Club sides from domestic leagues (PL, La Liga, etc.). */
+export function mapClubFromLeague(item: ApiLeagueTeamItem): TeamInsert {
+  return mapTeamFromLeagueItem(item, { isNational: false });
+}
+
+function mapTeamFromLeagueItem(
+  item: ApiLeagueTeamItem,
+  options: { isNational: boolean },
+): TeamInsert {
   return {
     id: item.team.id,
     name: item.team.name,
     code: item.team.code ?? null,
     country: item.team.country ?? null,
     logo_url: item.team.logo ?? null,
-    is_national: true,
+    is_national: options.isNational,
   };
 }
 
