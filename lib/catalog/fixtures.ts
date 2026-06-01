@@ -10,7 +10,7 @@ import type {
 } from "@/lib/catalog/types"
 import { createClient } from "@/lib/supabase/server"
 
-const FIXTURE_TEAM_SELECT = `
+export const FIXTURE_TEAM_SELECT = `
   id,
   season_id,
   round_id,
@@ -37,7 +37,7 @@ const FIXTURE_TEAM_SELECT = `
 
 const TERMINAL_LIST = [...TERMINAL_STATUSES]
 
-function mapFixtureRow(row: unknown): FixtureWithTeams | null {
+export function mapFixtureRow(row: unknown): FixtureWithTeams | null {
   if (!row || typeof row !== "object") return null
   const r = row as Record<string, unknown>
   const home = r.home_team
