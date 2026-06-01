@@ -1,5 +1,6 @@
 import Link from "next/link"
 
+import { MatchRow } from "@/components/match-row"
 import {
   getLatestResults,
   getUpcomingFixtures,
@@ -53,19 +54,23 @@ export default async function WorldCupPage({ searchParams }: PageProps) {
 
       {results.length > 0 && (
         <section className="mb-6">
-          <h2 className="h3 mb-2">Latest results (preview)</h2>
-          <ul className="space-y-2">
+          <h2 className="h3 mb-2">Latest results</h2>
+          <div className="overflow-hidden rounded-lg border border-border bg-card">
             {results.map((f) => (
-              <li key={f.id} className="body-sm rounded-md border border-border px-3 py-2">
-                <Link href={`/match/${f.id}`} className="hover:underline">
-                  {f.home_team.name} vs {f.away_team.name}
-                  {f.home_goals_ft != null && f.away_goals_ft != null
-                    ? ` · ${f.home_goals_ft}-${f.away_goals_ft} ${f.status_short}`
-                    : ` · ${f.status_short}`}
-                </Link>
-              </li>
+              <MatchRow key={f.id} fixture={f} showContext />
             ))}
-          </ul>
+          </div>
+        </section>
+      )}
+
+      {upcoming.length > 0 && (
+        <section className="mb-6">
+          <h2 className="h3 mb-2">Upcoming</h2>
+          <div className="overflow-hidden rounded-lg border border-border bg-card">
+            {upcoming.map((f) => (
+              <MatchRow key={f.id} fixture={f} showContext />
+            ))}
+          </div>
         </section>
       )}
 
