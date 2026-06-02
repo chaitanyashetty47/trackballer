@@ -2,7 +2,11 @@
 
 import { describe, expect, it } from "vitest"
 
-import { formatMatchScore, type MatchScoreFixture } from "@/lib/match/score"
+import {
+  formatMatchKickoffDateTime,
+  formatMatchScore,
+  type MatchScoreFixture,
+} from "@/lib/match/score"
 
 function scoreFixture(overrides: Partial<MatchScoreFixture> = {}): MatchScoreFixture {
   return {
@@ -30,7 +34,23 @@ describe("formatMatchScore", () => {
         hour: "numeric",
         minute: "2-digit",
         hour12: false,
+        timeZone: "UTC",
       }).format(new Date(kickoff_at)),
+    )
+  })
+
+  it("formats full kickoff datetime deterministically", () => {
+    expect(formatMatchKickoffDateTime("2022-12-18T20:30:00.000Z")).toBe(
+      new Intl.DateTimeFormat("en-GB", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZone: "UTC",
+      }).format(new Date("2022-12-18T20:30:00.000Z")),
     )
   })
 
