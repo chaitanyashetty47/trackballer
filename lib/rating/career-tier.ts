@@ -61,6 +61,20 @@ export function tierForScore(score: number): CareerTierSlug {
   return "unwatchable"
 }
 
+/**
+ * Public career score switches from FM-only to blended once votes reach 10.
+ * Blend formula: 20% community mean + 80% FM base.
+ */
+export function careerBlend(
+  meanUserRating: number | null | undefined,
+  fmBase: number | null | undefined,
+  voteCount: number,
+): number {
+  const fm = fmBase ?? 5
+  if (voteCount < 10 || meanUserRating == null) return fm
+  return Math.round((meanUserRating * 0.2 + fm * 0.8) * 100) / 100
+}
+
 /** One decimal on the career ring card (wireframe). */
 export function formatCareerScore(value: number | null | undefined): string {
   if (value == null || Number.isNaN(value)) return "—"

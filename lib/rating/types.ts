@@ -11,3 +11,12 @@ export const submitMatchRatingSchema = z.object({
 })
 
 export type SubmitMatchRatingInput = z.infer<typeof submitMatchRatingSchema>
+
+export const submitCareerRatingSchema = z.object({
+  playerId: z.number().int().positive(),
+  value: z
+    .number()
+    .refine(isValidRatingValue, "Rating must be between 1 and 10 in 0.5 steps"),
+})
+
+export type SubmitCareerRatingInput = z.infer<typeof submitCareerRatingSchema>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  careerBlend,
   careerTierCssVar,
   careerTierLabel,
   formatCareerScore,
@@ -47,5 +48,15 @@ describe("formatCareerScore", () => {
   it("formats one decimal", () => {
     expect(formatCareerScore(8.17)).toBe("8.2")
     expect(formatCareerScore(null)).toBe("—")
+  })
+})
+
+describe("careerBlend", () => {
+  it("keeps FM score before 10 votes", () => {
+    expect(careerBlend(9.5, 8.1, 9)).toBe(8.1)
+  })
+
+  it("switches to blended score at exactly 10 votes", () => {
+    expect(careerBlend(9.0, 8.0, 10)).toBe(8.2)
   })
 })
