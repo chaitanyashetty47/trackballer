@@ -39,11 +39,30 @@ function afterExtraTimeGoals(fixture: MatchScoreFixture): [number | null, number
   return [fixture.home_goals_ft, fixture.away_goals_ft]
 }
 
+const KICKOFF_LOCALE = "en-GB"
+/** Same zone on server and browser — avoids hydration mismatch from OS defaults. */
+const KICKOFF_TIME_ZONE = "UTC"
+
 function formatKickoffTime(iso: string): string {
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat(KICKOFF_LOCALE, {
     hour: "numeric",
     minute: "2-digit",
     hour12: false,
+    timeZone: KICKOFF_TIME_ZONE,
+  }).format(new Date(iso))
+}
+
+/** Full kickoff line for match header (date + time). */
+export function formatMatchKickoffDateTime(iso: string): string {
+  return new Intl.DateTimeFormat(KICKOFF_LOCALE, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: KICKOFF_TIME_ZONE,
   }).format(new Date(iso))
 }
 

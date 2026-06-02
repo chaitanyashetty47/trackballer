@@ -19,6 +19,7 @@ type LineupInsert = Database["public"]["Tables"]["fixture_lineups"]["Insert"];
 type AppearanceInsert =
   Database["public"]["Tables"]["fixture_appearances"]["Insert"];
 type EventInsert = Database["public"]["Tables"]["fixture_events"]["Insert"];
+type CoachInsert = Database["public"]["Tables"]["fixture_coaches"]["Insert"];
 
 export function normalizePosition(raw?: string | null): string | null {
   if (!raw) return null;
@@ -195,6 +196,24 @@ export function mapLineups(
   return { lineups: lineupsOut, playerStubs };
 }
 
+export function mapCoaches(
+  fixtureId: number,
+  lineups: ApiLineupItem[],
+): CoachInsert[] {
+  const rows: CoachInsert[] = [];
+  for (const teamLineup of lineups) {
+    const name = teamLineup.coach?.name?.trim();
+    if (!name) continue;
+    rows.push({
+      fixture_id: fixtureId,
+      team_id: teamLineup.team.id,
+      name,
+      photo_url: teamLineup.coach?.photo ?? null,
+    });
+  }
+  return rows;
+}
+
 export function mapAppearances(
   fixtureId: number,
   teams: ApiFixturePlayersItem[],
@@ -226,6 +245,7 @@ export function mapAppearances(
   return { appearances, playerStubs };
 }
 
+/** Subst events: API-Football `player` leaves, `assist` enters (stored as player_id / assist_player_id). */
 export function mapEvents(
   fixtureId: number,
   events: ApiFixtureEventItem[],

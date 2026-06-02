@@ -3,6 +3,7 @@ import type { Database } from "@/lib/database.types";
 import { ApiFootballClient } from "@/lib/api-football/client";
 import {
   mapAppearances,
+  mapCoaches,
   mapEvents,
   mapFixtureRow,
   mapLineups,
@@ -666,9 +667,11 @@ export class CatalogSync {
 
     if (lineups.length > 0) {
       const { lineups: lineupRows, playerStubs } = mapLineups(fixtureId, lineups);
+      const coachRows = mapCoaches(fixtureId, lineups);
       syncLog(`fixture ${fixtureId} — writing lineups`, {
         lineupRows: lineupRows.length,
         playerStubs: playerStubs.length,
+        coachRows: coachRows.length,
       });
       await this.upsertPlayers(playerStubs);
       await this.db.from("fixture_lineups").delete().eq("fixture_id", fixtureId);
@@ -682,6 +685,19 @@ export class CatalogSync {
         throw error;
       }
       result.lineups = lineupRows.length;
+
+      await this.db.from("fixture_coaches").delete().eq("fixture_id", fixtureId);
+      if (coachRows.length > 0) {
+        const { error: coachError } = await this.db
+          .from("fixture_coaches")
+          .insert(coachRows);
+        if (coachError) {
+          syncLog(`fixture ${fixtureId} — coaches insert failed`, {
+            message: coachError.message,
+          });
+          throw coachError;
+        }
+      }
 
       const { error: tsError } = await this.db
         .from("fixtures")

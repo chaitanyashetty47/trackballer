@@ -77,6 +77,11 @@ export type ApiLineupPlayer = {
 export type ApiLineupItem = {
   team: { id: number; name: string };
   formation?: string | null;
+  coach?: {
+    id?: number | null;
+    name?: string | null;
+    photo?: string | null;
+  } | null;
   startXI: ApiLineupPlayer[];
   substitutes: ApiLineupPlayer[];
 };

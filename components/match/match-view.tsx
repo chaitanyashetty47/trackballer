@@ -2,13 +2,17 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
+import { useCallback, useEffect, useState, useTransition } from "react"
 
+import {
+  MatchSubstitutesSection,
+  MatchUnusedBenchSection,
+} from "@/components/match/match-bench-sections"
 import { LineupPitch } from "@/components/match/lineup-pitch"
-import { RatingSheet, type RatingSheetSubject } from "@/components/rating/rating-sheet"
+import { RatingSheet } from "@/components/rating/rating-sheet"
 import { TeamFlag } from "@/components/team-flag"
 import { Button } from "@/components/ui/button"
-import { formatMatchScore } from "@/lib/match/score"
+import { formatMatchKickoffDateTime, formatMatchScore } from "@/lib/match/score"
 import type { MatchDetail, MatchLineupPlayer } from "@/lib/match/types"
 import { submitMatchRating } from "@/lib/rating/submit-match-rating"
 
@@ -31,26 +35,35 @@ function updatePlayerInList(
   return list.map((p) => (p.playerId === playerId ? { ...p, ...patch } : p))
 }
 
+function findRateableIndex(queue: MatchLineupPlayer[], playerId: number): number {
+  return queue.findIndex((p) => p.playerId === playerId)
+}
+
 export function MatchView({ detail: initialDetail, isLoggedIn }: MatchViewProps) {
   const router = useRouter()
   const [detail, setDetail] = useState(initialDetail)
+  const [ratingIndex, setRatingIndex] = useState<number | null>(null)
+  const [advanceOnSubmit, setAdvanceOnSubmit] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
     setDetail(initialDetail)
   }, [initialDetail])
-  const [sheetSubject, setSheetSubject] = useState<RatingSheetSubject | null>(null)
-  const [guidedIndex, setGuidedIndex] = useState<number | null>(null)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [isPending, startTransition] = useTransition()
 
   const { fixture } = detail
   const { scoreline, statusLabel } = formatMatchScore(fixture)
   const contextLabel = matchContextLabel(detail)
-
   const canRate = isLoggedIn && detail.ratingsUnlocked
+  const ratingOpen = ratingIndex != null && detail.rateableQueue[ratingIndex] != null
 
-  const openSheetForPlayer = useCallback(
-    (player: MatchLineupPlayer, guidedIdx: number | null = null) => {
+  const closeRatingSheet = useCallback(() => {
+    setRatingIndex(null)
+    setAdvanceOnSubmit(false)
+  }, [])
+
+  const openRatingSheet = useCallback(
+    (player: MatchLineupPlayer, options?: { advanceOnSubmit?: boolean }) => {
       if (!canRate) {
         if (!isLoggedIn) {
           setErrorMessage("Sign in to rate players.")
@@ -65,29 +78,28 @@ export function MatchView({ detail: initialDetail, isLoggedIn }: MatchViewProps)
         setErrorMessage("This player did not play enough minutes to rate.")
         return
       }
-      setErrorMessage(null)
-      setGuidedIndex(guidedIdx)
-      setSheetSubject({
-        playerId: player.playerId,
-        name: player.name,
-        context: contextLabel,
-        initialValue: player.userRating,
-      })
-    },
-    [canRate, contextLabel, detail.ratingsUnlocked, isLoggedIn],
-  )
 
-  const guidedPlayer = useMemo(() => {
-    if (guidedIndex == null) return null
-    return detail.rateableQueue[guidedIndex] ?? null
-  }, [detail.rateableQueue, guidedIndex])
+      const index = findRateableIndex(detail.rateableQueue, player.playerId)
+      if (index < 0) {
+        setErrorMessage("This player cannot be rated for this match.")
+        return
+      }
+
+      setErrorMessage(null)
+      setAdvanceOnSubmit(options?.advanceOnSubmit ?? false)
+      setRatingIndex(index)
+    },
+    [canRate, detail.rateableQueue, detail.ratingsUnlocked, isLoggedIn],
+  )
 
   function handleRateAll() {
     if (detail.rateableQueue.length === 0) {
       setErrorMessage("No rateable players for this match yet.")
       return
     }
-    openSheetForPlayer(detail.rateableQueue[0], 0)
+    setAdvanceOnSubmit(true)
+    setRatingIndex(0)
+    setErrorMessage(null)
   }
 
   function applyLocalRating(playerId: number, value: number, communityAvg: number | null) {
@@ -97,7 +109,11 @@ export function MatchView({ detail: initialDetail, isLoggedIn }: MatchViewProps)
         userRating: value,
         communityAvg,
       }),
-      substitutes: updatePlayerInList(prev.substitutes, playerId, {
+      substitutesOn: updatePlayerInList(prev.substitutesOn, playerId, {
+        userRating: value,
+        communityAvg,
+      }),
+      benchUnused: updatePlayerInList(prev.benchUnused, playerId, {
         userRating: value,
         communityAvg,
       }),
@@ -109,14 +125,18 @@ export function MatchView({ detail: initialDetail, isLoggedIn }: MatchViewProps)
   }
 
   function handleSubmit(value: number) {
-    if (!sheetSubject) return
-    const snapshotGuided = guidedIndex
-    const snapshotQueue = detail.rateableQueue
+    if (ratingIndex == null) return
+
+    const player = detail.rateableQueue[ratingIndex]
+    if (!player) return
+
+    const snapshotIndex = ratingIndex
+    const shouldAdvance = advanceOnSubmit
 
     startTransition(async () => {
       const result = await submitMatchRating({
         fixtureId: fixture.id,
-        playerId: sheetSubject.playerId,
+        playerId: player.playerId,
         value,
       })
 
@@ -125,47 +145,33 @@ export function MatchView({ detail: initialDetail, isLoggedIn }: MatchViewProps)
         return
       }
 
-      const player =
-        detail.starters.find((p) => p.playerId === sheetSubject.playerId) ??
-        detail.substitutes.find((p) => p.playerId === sheetSubject.playerId)
-
-      const prevAvg = player?.communityAvg
-      const prevCount = player?.ratingCount ?? 0
+      const prevAvg = player.communityAvg
+      const prevCount = player.ratingCount ?? 0
       let nextAvg = value
-      if (player?.userRating != null && prevCount > 0) {
+      if (player.userRating != null && prevCount > 0) {
         const total = (prevAvg ?? 0) * prevCount - player.userRating + value
         nextAvg = Math.round((total / prevCount) * 100) / 100
       } else if (prevCount > 0 && prevAvg != null) {
         nextAvg = Math.round(((prevAvg * prevCount + value) / (prevCount + 1)) * 100) / 100
       }
 
-      applyLocalRating(sheetSubject.playerId, value, nextAvg)
-      setSheetSubject(null)
+      applyLocalRating(player.playerId, value, nextAvg)
       router.refresh()
 
-      if (snapshotGuided != null) {
-        const nextPlayer = snapshotQueue[snapshotGuided + 1]
-        if (nextPlayer) {
-          openSheetForPlayer(nextPlayer, snapshotGuided + 1)
-        } else {
-          setGuidedIndex(null)
-        }
+      if (shouldAdvance && snapshotIndex < detail.rateableQueue.length - 1) {
+        setRatingIndex(snapshotIndex + 1)
+      } else {
+        closeRatingSheet()
       }
     })
   }
 
   const kickoff = fixture.kickoff_at
-    ? new Date(fixture.kickoff_at).toLocaleString(undefined, {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
+    ? formatMatchKickoffDateTime(fixture.kickoff_at)
     : null
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-8">
+    <div className="mx-auto max-w-lg px-4 py-8 md:max-w-5xl">
       <p className="eyebrow mb-2">Match</p>
 
       <div className="mb-6 text-center">
@@ -212,7 +218,14 @@ export function MatchView({ detail: initialDetail, isLoggedIn }: MatchViewProps)
       )}
 
       <section className="mb-6">
-        <h2 className="h3 mb-3">Lineups</h2>
+        <div className="mb-3 flex items-baseline justify-between gap-3">
+          <h2 className="h3">Lineups</h2>
+          {(detail.homeFormation || detail.awayFormation) && (
+            <span className="font-mono text-xs tabular-nums text-muted-foreground">
+              {detail.homeFormation ?? "?"} · {detail.awayFormation ?? "?"}
+            </span>
+          )}
+        </div>
         {!detail.hasLineups ? (
           <p className="body-sm text-muted-foreground">
             Lineups are not available yet. Check back closer to kickoff.
@@ -221,42 +234,24 @@ export function MatchView({ detail: initialDetail, isLoggedIn }: MatchViewProps)
           <LineupPitch
             starters={detail.starters}
             ratingsLocked={!canRate}
-            onPlayerClick={(player) => openSheetForPlayer(player)}
+            onPlayerClick={(player) => openRatingSheet(player)}
           />
         )}
       </section>
 
-      {detail.substitutes.length > 0 && (
-        <section className="mb-8">
-          <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Substitutes</h3>
-          <ul className="divide-y divide-border rounded-lg border border-border bg-card">
-            {detail.substitutes.map((player) => (
-              <li key={player.playerId}>
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-sm hover:bg-muted/50"
-                  onClick={() => openSheetForPlayer(player)}
-                  disabled={!canRate || !player.isRateable}
-                >
-                  <span>
-                    {player.shirtNumber != null ? `${player.shirtNumber}. ` : ""}
-                    {player.name}
-                  </span>
-                  <span className="font-mono text-xs tabular-nums text-muted-foreground">
-                    {player.communityAvg?.toFixed(2) ?? "—"}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <MatchSubstitutesSection
+        fixture={fixture}
+        coaches={detail.coaches}
+        substitutesOn={detail.substitutesOn}
+        canRate={canRate}
+        onPlayerSelect={(player) => openRatingSheet(player)}
+      />
 
-      {guidedPlayer && guidedIndex != null && !sheetSubject && (
-        <p className="body-sm text-center text-muted-foreground">
-          Guided rating paused. Tap Rate all players to continue.
-        </p>
-      )}
+      <MatchUnusedBenchSection
+        fixture={fixture}
+        benchUnused={detail.benchUnused}
+        onPlayerSelect={(player) => openRatingSheet(player)}
+      />
 
       <p className="body-sm text-center">
         <Link href="/world-cup" className="text-primary underline-offset-4 hover:underline">
@@ -265,11 +260,14 @@ export function MatchView({ detail: initialDetail, isLoggedIn }: MatchViewProps)
       </p>
 
       <RatingSheet
-        subject={sheetSubject}
-        onClose={() => {
-          setSheetSubject(null)
-          setGuidedIndex(null)
-        }}
+        open={ratingOpen}
+        players={detail.rateableQueue}
+        activeIndex={ratingIndex ?? 0}
+        matchContext={contextLabel}
+        homeTeam={fixture.home_team}
+        awayTeam={fixture.away_team}
+        onClose={closeRatingSheet}
+        onIndexChange={setRatingIndex}
         onSubmit={handleSubmit}
         isSubmitting={isPending}
       />

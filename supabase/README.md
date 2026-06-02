@@ -44,6 +44,7 @@ Server routes under `/api/admin/sync/*`. Start dev server: `npm run dev` in `tra
 | `GET` | `http://localhost:3000/api/admin/sync/health?seasonYear=2022` | none (**which fixtures** pending / partial / complete) |
 | `POST` | `http://localhost:3000/api/admin/sync/bootstrap` | optional — see **Bootstrap** below |
 | `POST` | `http://localhost:3000/api/admin/sync/fixture-details/pending` | optional — **skips** fixtures with `lineups_synced_at` set |
+| `POST` | `http://localhost:3000/api/admin/sync/coaches/backfill` | optional — **lineups API only**; fills `fixture_coaches` where missing |
 | `POST` | `http://localhost:3000/api/admin/sync/fixture/855736` | none (replace id) |
 | `POST` | `http://localhost:3000/api/admin/sync/player/891` | `{"seasonYear":2022}` optional |
 | `POST` | `http://localhost:3000/api/admin/sync/players/repair` | `{"limit":30,"seasonYear":2022}` optional |
@@ -76,6 +77,19 @@ curl --location --request POST 'http://localhost:3000/api/admin/sync/fixture-det
 ```
 
 Omit `limit` to process all pending in one run (~168 API calls). Re-run until `pending` in the response is `0`.
+
+### Coaches backfill (after `fixture_coaches` migration)
+
+For matches that already have lineups but no coach rows: **1 API call per fixture** (lineups endpoint only). Skips fixtures that already have coaches unless `force: true`.
+
+```bash
+curl --location --request POST 'http://localhost:3000/api/admin/sync/coaches/backfill' \
+  --header 'Authorization: Bearer YOUR_SYNC_SECRET' \
+  --header 'Content-Type: application/json' \
+  --data '{"seasonYear":2022}'
+```
+
+Optional `limit` (e.g. `10`) for a short batch. Re-run until `missingTotal` in the response is `0`.
 
 ### Knowing what was interrupted (prod)
 

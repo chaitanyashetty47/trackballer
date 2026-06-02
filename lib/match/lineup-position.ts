@@ -1,53 +1,29 @@
 export type PitchSide = "home" | "away"
 
-export type PitchPosition = {
-  leftPct: number
-  topPct: number
+export type GridSlot = {
+  /** Formation line: 1 = goalkeeper, 2 = first defensive line, increasing toward attack. */
+  row: number
+  /** Position within the line (1-based, left to right from API-Football). */
+  col: number
 }
+
+const UNKNOWN_ROW = 99
 
 /**
- * Maps API-Football grid "row:col" to vertical pitch percentages.
- * Home occupies the top half; away the bottom half.
+ * Parses an API-Football "row:col" grid string into a formation slot.
+ * Players without a usable grid fall into a single shared row so they
+ * still render in one tidy line instead of stacking on each other.
  */
-export function gridToPitchPosition(
-  grid: string | null,
-  side: PitchSide,
-  fallbackIndex: number,
-): PitchPosition {
-  const parsed = grid ? parseGrid(grid) : null
-  if (parsed) {
-    const rowSpan = 4
-    const colSpan = 4
-    const rowNorm = (parsed.row - 1) / rowSpan
-    const colNorm = (parsed.col - 1) / colSpan
-
-    if (side === "home") {
-      return {
-        leftPct: 12 + colNorm * 76,
-        topPct: 8 + rowNorm * 38,
+export function parseGridSlot(grid: string | null, fallbackIndex: number): GridSlot {
+  if (grid) {
+    const parts = grid.split(":")
+    if (parts.length === 2) {
+      const row = Number(parts[0])
+      const col = Number(parts[1])
+      if (Number.isFinite(row) && Number.isFinite(col) && row >= 1 && col >= 1) {
+        return { row, col }
       }
     }
-    return {
-      leftPct: 12 + colNorm * 76,
-      topPct: 92 - rowNorm * 38,
-    }
   }
-
-  const col = fallbackIndex % 4
-  const row = Math.floor(fallbackIndex / 4)
-  if (side === "home") {
-    return { leftPct: 15 + col * 22, topPct: 12 + row * 10 }
-  }
-  return { leftPct: 15 + col * 22, topPct: 78 - row * 10 }
-}
-
-function parseGrid(grid: string): { row: number; col: number } | null {
-  const parts = grid.split(":")
-  if (parts.length !== 2) return null
-  const row = Number(parts[0])
-  const col = Number(parts[1])
-  if (!Number.isFinite(row) || !Number.isFinite(col) || row < 1 || col < 1) {
-    return null
-  }
-  return { row, col }
+  return { row: UNKNOWN_ROW, col: fallbackIndex + 1 }
 }

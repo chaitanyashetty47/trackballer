@@ -269,6 +269,42 @@ export type Database = {
           },
         ]
       }
+      fixture_coaches: {
+        Row: {
+          fixture_id: number
+          name: string
+          photo_url: string | null
+          team_id: number
+        }
+        Insert: {
+          fixture_id: number
+          name: string
+          photo_url?: string | null
+          team_id: number
+        }
+        Update: {
+          fixture_id?: number
+          name?: string
+          photo_url?: string | null
+          team_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixture_coaches_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixtures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixture_coaches_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fixture_events: {
         Row: {
           assist_player_id: number | null
