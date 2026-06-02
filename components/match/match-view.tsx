@@ -9,16 +9,21 @@ import {
   MatchUnusedBenchSection,
 } from "@/components/match/match-bench-sections"
 import { LineupPitch } from "@/components/match/lineup-pitch"
+import { CommentThread } from "@/components/comment/comment-thread"
 import { RatingSheet } from "@/components/rating/rating-sheet"
 import { TeamFlag } from "@/components/team-flag"
 import { Button } from "@/components/ui/button"
 import { formatMatchKickoffDateTime, formatMatchScore } from "@/lib/match/score"
 import type { MatchDetail, MatchLineupPlayer } from "@/lib/match/types"
+import type { CommentWithProfile } from "@/lib/comment/types"
 import { submitMatchRating } from "@/lib/rating/submit-match-rating"
 
 type MatchViewProps = {
   detail: MatchDetail
   isLoggedIn: boolean
+  comments?: CommentWithProfile[]
+  userVotes?: Record<number, 1 | -1>
+  currentUserId?: string | null
 }
 
 function matchContextLabel(detail: MatchDetail): string {
@@ -39,7 +44,13 @@ function findRateableIndex(queue: MatchLineupPlayer[], playerId: number): number
   return queue.findIndex((p) => p.playerId === playerId)
 }
 
-export function MatchView({ detail: initialDetail, isLoggedIn }: MatchViewProps) {
+export function MatchView({
+  detail: initialDetail,
+  isLoggedIn,
+  comments = [],
+  userVotes = {},
+  currentUserId = null,
+}: MatchViewProps) {
   const router = useRouter()
   const [detail, setDetail] = useState(initialDetail)
   const [ratingIndex, setRatingIndex] = useState<number | null>(null)
@@ -253,7 +264,16 @@ export function MatchView({ detail: initialDetail, isLoggedIn }: MatchViewProps)
         onPlayerSelect={(player) => openRatingSheet(player)}
       />
 
-      <p className="body-sm text-center">
+      <CommentThread
+        initialComments={comments}
+        initialUserVotes={userVotes}
+        targetType="match"
+        targetId={fixture.id}
+        isLoggedIn={isLoggedIn}
+        currentUserId={currentUserId}
+      />
+
+      <p className="body-sm text-center mt-6">
         <Link href="/world-cup" className="text-primary underline-offset-4 hover:underline">
           Back to World Cup
         </Link>
