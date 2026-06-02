@@ -134,6 +134,17 @@ The sync client **serializes** every API-Football call (~6.5s apart at 10 req/mi
 
 If you hit `429`, the client waits ~65s and retries once. Optional: `API_FOOTBALL_MIN_INTERVAL_MS=7000` for extra headroom.
 
+### FM career base ratings (Slice 7)
+
+Seed `players.fm_base_rating` from repo CSV, then refresh provisional career aggregates:
+
+```bash
+node --env-file=.env scripts/seed-fm-ratings.mjs ../players_with_fm_ratings.csv
+node --env-file=.env scripts/backfill-career-aggregates.mjs
+```
+
+Use `--dry-run` on either script to preview. Players without an FM row keep the default provisional score (5.0).
+
 ### Player profile repair
 
 Fixture event sync used to write `Player {id}` when the API omitted names. Stub upserts now **merge** and never downgrade a real name. To fix existing rows:

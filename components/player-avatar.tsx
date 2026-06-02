@@ -6,16 +6,17 @@ type PlayerAvatarProps = {
   name: string
   photoUrl: string | null
   shirtNumber?: number | null
-  size?: "sm" | "md" | "lg"
+  size?: "sm" | "md" | "lg" | "xl"
   className?: string
 }
 
-const sizePx = { sm: 28, md: 36, lg: 44 } as const
+const sizePx = { sm: 28, md: 36, lg: 44, xl: 108 } as const
 
 const sizeClass = {
   sm: "size-7 text-[10px]",
   md: "size-9 text-xs",
   lg: "size-11 text-sm",
+  xl: "size-[6.75rem] text-lg",
 } as const
 
 function initialsFromName(name: string): string {
