@@ -308,6 +308,34 @@ export class CatalogSync {
     if (error) throw error;
   }
 
+  private async findExistingTeamId(teamId: number): Promise<number | null> {
+    const { data, error } = await this.db
+      .from("teams")
+      .select("id")
+      .eq("id", teamId)
+      .maybeSingle();
+    if (error) throw error;
+    return data?.id ?? null;
+  }
+
+  private async findExistingClubTeamId(teamIds: number[]): Promise<number | null> {
+    if (teamIds.length === 0) return null;
+    const uniqueIds = [...new Set(teamIds)];
+    const { data, error } = await this.db
+      .from("teams")
+      .select("id, is_national")
+      .in("id", uniqueIds);
+    if (error) throw error;
+
+    const clubIdSet = new Set(
+      (data ?? []).filter((t) => t.is_national === false).map((t) => t.id),
+    );
+    for (const id of uniqueIds) {
+      if (clubIdSet.has(id)) return id;
+    }
+    return null;
+  }
+
   /**
    * Full profile from GET /players?id&season — firstname, lastname, nationality, birth_date.
    * Preserves national_team_id when already set or linked via player_season_squads.
@@ -325,6 +353,13 @@ export class CatalogSync {
     }
 
     const row = mapPlayerProfile(item);
+    const profileTeamIds = (item.statistics ?? [])
+      .map((s) => s.team?.id ?? null)
+      .filter((id): id is number => id != null);
+    const existingClubTeamId = await this.findExistingClubTeamId(profileTeamIds);
+    if (existingClubTeamId != null) {
+      row.club_team_id = existingClubTeamId;
+    }
     await this.upsertPlayerProfile(row);
 
     return {
