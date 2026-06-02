@@ -82,4 +82,4 @@ export function formatCareerScore(value: number | null | undefined): string {
 }
 
 export const PROVISIONAL_CAREER_COPY =
-  "Provisional · Based on FM data until 10 community ratings"
+  "Provisional · Base Rating until 10 community ratings"
