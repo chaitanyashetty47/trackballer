@@ -7,25 +7,39 @@ type CareerRingProps = {
   photoUrl: string | null
   tier: string
   className?: string
+  /** Compact size for horizontal profile header. */
+  compact?: boolean
 }
 
-export function CareerRing({ name, photoUrl, tier, className }: CareerRingProps) {
+export function CareerRing({ name, photoUrl, tier, className, compact = false }: CareerRingProps) {
   const ringVar = careerTierCssVar(tier)
 
   return (
     <div
-      className={cn("relative flex size-[7.5rem] items-center justify-center", className)}
+      className={cn(
+        "relative flex items-center justify-center",
+        compact ? "size-[4.5rem]" : "size-[7.5rem]",
+        className,
+      )}
       style={{ ["--career-ring-color" as string]: `var(${ringVar})` }}
     >
       <span
         aria-hidden
-        className="absolute inset-0 rounded-full border-[5px] border-[var(--career-ring-color)]"
+        className={cn(
+          "absolute inset-0 rounded-full border-[var(--career-ring-color)]",
+          compact ? "border-[3px]" : "border-[5px]",
+        )}
       />
       <PlayerAvatar
         name={name}
         photoUrl={photoUrl}
-        size="xl"
-        className="relative z-10 rounded-full border-2 border-background shadow-sm"
+        size={compact ? "lg" : "xl"}
+        className={cn(
+          "relative z-10 rounded-full object-cover",
+          compact
+            ? "size-[calc(100%-6px)] border-0 shadow-none"
+            : "border-2 border-background shadow-sm",
+        )}
       />
     </div>
   )

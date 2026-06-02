@@ -7,12 +7,16 @@ import { useState, useTransition } from "react"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { isValidRatingValue } from "@/lib/rating/engine"
 import { submitCareerRating } from "@/lib/rating/submit-career-rating"
+import { cn } from "@/lib/utils"
 
 type PlayerCareerRatingCtaProps = {
   playerId: number
   playerName: string
   canRate: boolean
   initialValue: number | null
+  /** Header pill (FotMob-style) vs stacked default. */
+  layout?: "default" | "header"
+  className?: string
 }
 
 export function PlayerCareerRatingCta({
@@ -20,6 +24,8 @@ export function PlayerCareerRatingCta({
   playerName,
   canRate,
   initialValue,
+  layout = "default",
+  className,
 }: PlayerCareerRatingCtaProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -42,25 +48,64 @@ export function PlayerCareerRatingCta({
     })
   }
 
+  const isHeader = layout === "header"
+  const buttonLabel =
+    initialValue == null
+      ? isHeader
+        ? "Rate"
+        : "Rate career"
+      : isHeader
+        ? "Edit"
+        : "Edit career rating"
+
+  const personalCopy =
+    initialValue == null
+      ? "You have not rated this career yet."
+      : `You rated their career: ${initialValue.toFixed(1)} / 10`
+
   if (!canRate) {
     return (
-      <Link href="/login" className={buttonVariants({ size: "sm", className: "mt-2" })}>
-        Sign in to rate career
+      <Link
+        href="/login"
+        className={cn(
+          buttonVariants({
+            size: "sm",
+            variant: isHeader ? "outline" : "default",
+            className: cn(
+              isHeader &&
+                "shrink-0 border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20",
+            ),
+          }),
+          className,
+        )}
+      >
+        {isHeader ? "Sign in" : "Sign in to rate career"}
       </Link>
     )
   }
 
   return (
     <>
-      <div className="mt-2 flex flex-col items-center gap-1">
-        <Button size="sm" onClick={() => setOpen(true)}>
-          {initialValue == null ? "Rate career" : "Edit career rating"}
+      <div
+        className={cn(
+          isHeader ? "flex shrink-0 flex-col items-end gap-1" : "mt-2 flex flex-col items-center gap-1",
+          className,
+        )}
+      >
+        <Button
+          size="sm"
+          variant={isHeader ? "outline" : "default"}
+          className={cn(
+            isHeader &&
+              "border-primary-foreground/40 bg-primary-foreground text-primary hover:bg-primary-foreground/90",
+          )}
+          onClick={() => setOpen(true)}
+        >
+          {buttonLabel}
         </Button>
-        <p className="text-xs text-muted-foreground">
-          {initialValue == null
-            ? "You have not rated this career yet."
-            : `You rated their career: ${initialValue.toFixed(1)} / 10`}
-        </p>
+        {!isHeader && (
+          <p className="text-xs text-muted-foreground">{personalCopy}</p>
+        )}
       </div>
 
       {!open ? null : (
