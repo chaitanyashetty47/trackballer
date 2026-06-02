@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 
 import { CareerRing } from "@/components/player/career-ring"
+import { PlayerCareerRatingCta } from "@/components/player/player-career-rating-cta"
 import { PlayerTierCard } from "@/components/player/player-tier-card"
 import { TeamFlag } from "@/components/team-flag"
 import { positionDisplayLabel } from "@/lib/match/position-label"
@@ -8,13 +9,14 @@ import type { PlayerProfile } from "@/lib/player/types"
 
 type PlayerProfileHeroProps = {
   profile: PlayerProfile
+  canRateCareer: boolean
 }
 
 function MetaSegment({ children }: { children: ReactNode }) {
   return <span className="inline-flex items-center gap-1.5">{children}</span>
 }
 
-export function PlayerProfileHero({ profile }: PlayerProfileHeroProps) {
+export function PlayerProfileHero({ profile, canRateCareer }: PlayerProfileHeroProps) {
   const positionLabel = positionDisplayLabel(profile.primaryPosition)
   const segments: ReactNode[] = []
 
@@ -56,6 +58,12 @@ export function PlayerProfileHero({ profile }: PlayerProfileHeroProps) {
           tier={profile.career.tier}
         />
         <h1 className="h-display max-w-full truncate px-2">{profile.name}</h1>
+        <PlayerCareerRatingCta
+          playerId={profile.id}
+          playerName={profile.name}
+          canRate={canRateCareer}
+          initialValue={profile.userCareerRating}
+        />
         {segments.length > 0 && (
           <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
             {segments.map((segment, index) => (

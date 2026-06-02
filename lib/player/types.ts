@@ -17,4 +17,5 @@ export type PlayerProfile = {
   clubTeam: TeamSummary | null
   nationalTeam: TeamSummary | null
   career: PlayerCareerAggregate
+  userCareerRating: number | null
 }

@@ -1,5 +1,3 @@
-import { cache } from "react"
-
 import type { TeamSummary } from "@/lib/catalog/types"
 import type { PlayerCareerAggregate, PlayerProfile } from "@/lib/player/types"
 import { createClient } from "@/lib/supabase/server"
@@ -24,6 +22,10 @@ type AggregateRow = {
   display_score: number
   is_provisional: boolean
   tier: string
+}
+
+type CareerRatingRow = {
+  value: number
 }
 
 const DEFAULT_CAREER: PlayerCareerAggregate = {
@@ -53,53 +55,78 @@ function mapCareer(row: AggregateRow | null): PlayerCareerAggregate {
   }
 }
 
-export const getPlayerProfile = cache(
-  async (playerId: number): Promise<PlayerProfile | null> => {
-    const supabase = await createClient()
+export async function getPlayerProfile(
+  playerId: number,
+  userId: string | null = null,
+): Promise<PlayerProfile | null> {
+  const supabase = await createClient()
 
-    const [{ data: playerRow, error: playerError }, { data: careerRow }] =
-      await Promise.all([
-        supabase
-          .from("players")
-          .select(
-            `
-            id,
-            name,
-            photo_url,
-            age,
-            primary_position,
-            nationality,
-            club_team:teams!players_club_team_id_fkey(${TEAM_SELECT}),
-            national_team:teams!players_national_team_id_fkey(${TEAM_SELECT})
-          `,
-          )
-          .eq("id", playerId)
-          .maybeSingle(),
-        supabase
-          .from("player_career_aggregates")
-          .select("vote_count, display_score, is_provisional, tier")
-          .eq("player_id", playerId)
-          .maybeSingle(),
-      ])
+  const [{ data: playerRow, error: playerError }, { data: careerRow }, userRatingResult] =
+    await Promise.all([
+      supabase
+        .from("players")
+        .select(
+          `
+          id,
+          name,
+          photo_url,
+          age,
+          primary_position,
+          nationality,
+          club_team:teams!players_club_team_id_fkey(${TEAM_SELECT}),
+          national_team:teams!players_national_team_id_fkey(${TEAM_SELECT})
+        `,
+        )
+        .eq("id", playerId)
+        .maybeSingle(),
+      supabase
+        .from("player_career_aggregates")
+        .select("vote_count, display_score, is_provisional, tier")
+        .eq("player_id", playerId)
+        .maybeSingle(),
+      loadUserCareerRating(supabase, playerId, userId),
+    ])
 
-    if (playerError) {
-      console.error("getPlayerProfile player:", playerError.message)
-      return null
-    }
-    if (!playerRow) return null
+  if (playerError) {
+    console.error("getPlayerProfile player:", playerError.message)
+    return null
+  }
+  if (!playerRow) return null
 
-    const row = playerRow as PlayerRow
+  const row = playerRow as PlayerRow
 
-    return {
-      id: row.id,
-      name: row.name,
-      photoUrl: row.photo_url,
-      age: row.age,
-      primaryPosition: row.primary_position,
-      nationality: row.nationality,
-      clubTeam: mapTeam(row.club_team),
-      nationalTeam: mapTeam(row.national_team),
-      career: mapCareer(careerRow as AggregateRow | null),
-    }
-  },
-)
+  return {
+    id: row.id,
+    name: row.name,
+    photoUrl: row.photo_url,
+    age: row.age,
+    primaryPosition: row.primary_position,
+    nationality: row.nationality,
+    clubTeam: mapTeam(row.club_team),
+    nationalTeam: mapTeam(row.national_team),
+    career: mapCareer(careerRow as AggregateRow | null),
+    userCareerRating: userRatingResult,
+  }
+}
+
+async function loadUserCareerRating(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  playerId: number,
+  userId: string | null,
+): Promise<number | null> {
+  if (!userId) return null
+
+  const { data, error } = await supabase
+    .from("career_ratings")
+    .select("value")
+    .eq("player_id", playerId)
+    .eq("user_id", userId)
+    .maybeSingle()
+
+  if (error) {
+    console.error("getPlayerProfile rating:", error.message)
+    return null
+  }
+
+  return (data as CareerRatingRow | null)?.value ?? null
+}
