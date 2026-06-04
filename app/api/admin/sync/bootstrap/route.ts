@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
 import { assertSyncAuthorized } from "@/lib/admin/sync-auth";
-import { createCatalogSync, runSync, SYNC_ROUTE_MAX_DURATION } from "@/lib/admin/sync-handler";
+import { createCatalogSync, runSync } from "@/lib/admin/sync-handler";
 
 export const runtime = "nodejs";
-/** WC bootstrap is many API calls; Hobby plan max is 300s — run catalog-only or split jobs if it times out. */
-export const maxDuration = SYNC_ROUTE_MAX_DURATION;
+/** WC bootstrap is many API calls; Vercel Hobby max is 300s — run catalog-only or split jobs if it times out. */
+export const maxDuration = 300;
 
 type BootstrapBody = {
   leagueId?: number;

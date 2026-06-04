@@ -1,14 +1,14 @@
 import { NextRequest } from "next/server";
 
 import { assertSyncAuthorized } from "@/lib/admin/sync-auth";
-import { jsonError, runSync, SYNC_ROUTE_MAX_DURATION } from "@/lib/admin/sync-handler";
+import { jsonError, runSync } from "@/lib/admin/sync-handler";
 import { syncCoachesBackfill } from "@/lib/catalog-sync/coaches-backfill";
 import { ApiFootballClient } from "@/lib/api-football/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 /** Use body `limit` on Hobby (300s cap); re-run until no pending fixtures. */
-export const maxDuration = SYNC_ROUTE_MAX_DURATION;
+export const maxDuration = 300;
 
 type BackfillBody = {
   leagueId?: number;
