@@ -1,5 +1,6 @@
 import { ProfileEditForm } from "@/components/profile/profile-edit-form"
 import { ProfileHeader } from "@/components/profile/profile-header"
+import { ProfileSignOutButton } from "@/components/profile/profile-sign-out-button"
 import { ProfileStatsRow } from "@/components/profile/profile-stats"
 import { RecentCommentsList } from "@/components/profile/recent-comments-list"
 import { RecentRatingsList } from "@/components/profile/recent-ratings-list"
@@ -19,7 +20,10 @@ export function ProfilePage({ data }: ProfilePageProps) {
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-4 py-8">
-      <ProfileHeader profile={profile} />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <ProfileHeader profile={profile} />
+        {isOwner ? <ProfileSignOutButton /> : null}
+      </div>
       <ProfileStatsRow stats={stats} />
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(260px,300px)] lg:items-start">
