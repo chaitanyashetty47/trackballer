@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
 import { assertSyncAuthorized } from "@/lib/admin/sync-auth";
-import { createCatalogSync, runSync } from "@/lib/admin/sync-handler";
+import { createCatalogSync, runSync, SYNC_ROUTE_MAX_DURATION } from "@/lib/admin/sync-handler";
 
 export const runtime = "nodejs";
-/** WC bootstrap is ~45+ API calls; at 10/min this can exceed 5 minutes. */
-export const maxDuration = 600;
+/** WC bootstrap is many API calls; Hobby plan max is 300s — run catalog-only or split jobs if it times out. */
+export const maxDuration = SYNC_ROUTE_MAX_DURATION;
 
 type BootstrapBody = {
   leagueId?: number;

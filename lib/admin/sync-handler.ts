@@ -1,6 +1,9 @@
 import { CatalogSync } from "@/lib/catalog-sync/catalog-sync";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+/** Vercel Hobby caps serverless maxDuration at 300 seconds. */
+export const SYNC_ROUTE_MAX_DURATION = 300;
+
 export function createCatalogSync() {
   return new CatalogSync(createAdminClient());
 }

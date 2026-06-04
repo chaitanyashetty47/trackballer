@@ -1,10 +1,15 @@
 import { NextRequest } from "next/server";
 import { assertSyncAuthorized } from "@/lib/admin/sync-auth";
-import { createCatalogSync, jsonError, runSync } from "@/lib/admin/sync-handler";
+import {
+  createCatalogSync,
+  jsonError,
+  runSync,
+  SYNC_ROUTE_MAX_DURATION,
+} from "@/lib/admin/sync-handler";
 
 export const runtime = "nodejs";
-/** 56 fixtures × 3 calls ≈ 18+ min at 10 req/min; optional limit in body */
-export const maxDuration = 600;
+/** Use body `limit` to stay within Hobby 300s; full backfill needs multiple runs or Pro plan. */
+export const maxDuration = SYNC_ROUTE_MAX_DURATION;
 
 type PendingBody = {
   leagueId?: number;

@@ -1,10 +1,15 @@
 import { NextRequest } from "next/server";
 import { assertSyncAuthorized } from "@/lib/admin/sync-auth";
-import { createCatalogSync, jsonError, runSync } from "@/lib/admin/sync-handler";
+import {
+  createCatalogSync,
+  jsonError,
+  runSync,
+  SYNC_ROUTE_MAX_DURATION,
+} from "@/lib/admin/sync-handler";
 
 export const runtime = "nodejs";
-/** Default 30 players × ~6.5s ≈ 3+ min */
-export const maxDuration = 600;
+/** Default 30 players × ~6.5s ≈ 3+ min; capped for Vercel Hobby. */
+export const maxDuration = SYNC_ROUTE_MAX_DURATION;
 
 type RepairBody = {
   seasonYear?: number;
