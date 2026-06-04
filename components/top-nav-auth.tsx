@@ -1,5 +1,6 @@
 import Link from "next/link"
 
+import { buttonVariants } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/server"
 import { cn } from "@/lib/utils"
 
@@ -21,10 +22,9 @@ export async function TopNavAuth() {
     return (
       <Link
         href="/login"
-        className="flex size-9 items-center justify-center rounded-full border border-border bg-muted text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground"
-        aria-label="Sign in"
+        className={cn(buttonVariants({ size: "sm", variant: "default" }), "shrink-0")}
       >
-        In
+        Sign in
       </Link>
     )
   }
