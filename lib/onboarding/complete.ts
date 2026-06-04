@@ -1,7 +1,5 @@
 "use server"
 
-import { redirect } from "next/navigation"
-
 import { completeOnboardingSchema } from "@/lib/onboarding/types"
 import { createClient } from "@/lib/supabase/server"
 
@@ -46,5 +44,5 @@ export async function completeOnboarding(
     return { ok: false, error: "Could not save your profile. Try again." }
   }
 
-  redirect("/")
+  return { ok: true }
 }

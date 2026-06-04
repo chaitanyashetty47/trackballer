@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr"
 import { type NextRequest, NextResponse } from "next/server"
 
 import { getPostOAuthRedirectPath } from "@/lib/auth/post-oauth-redirect"
+import { readSessionClaims } from "@/lib/auth/session-claims"
 import { getSupabasePublishableConfig } from "@/lib/supabase/env"
 
 const AUTH_QUERY_PARAMS = ["code", "state", "error", "error_description"] as const
@@ -57,7 +58,22 @@ export async function proxy(request: NextRequest) {
     return redirectResponse
   }
 
-  await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const pathname = request.nextUrl.pathname
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    if (!user) {
+      const loginUrl = new URL("/login", request.url)
+      return NextResponse.redirect(loginUrl)
+    }
+
+    const { isAdmin } = await readSessionClaims(supabase)
+    if (!isAdmin) {
+      return NextResponse.redirect(new URL("/", request.url))
+    }
+  }
 
   return supabaseResponse
 }

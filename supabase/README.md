@@ -14,6 +14,24 @@ Migrations implement the locked design in [`../../DATABASE.md`](../../DATABASE.m
 | `20260529050002` | `init_rls_policies` | RLS on all tables (`(select auth.uid())` pattern) |
 | `20260529050003` | `init_aggregate_triggers` | Career/match/form/tournament aggregates + comment vote counts |
 | `20260529050004` | `init_function_security` | `search_path` + revoke public execute on internal functions |
+| `20260605120000` | `custom_access_token_hook` | JWT `app_metadata.is_admin` + `is_onboarded` from `profiles` |
+
+## Custom access token hook
+
+On each login or `refreshSession`, Supabase Auth runs `public.custom_access_token_hook`, which reads `profiles.is_admin` and `profiles.onboarding_completed_at` and sets:
+
+- `app_metadata.is_admin` (boolean)
+- `app_metadata.is_onboarded` (boolean — `onboarding_completed_at IS NOT NULL`)
+
+**Local:** enabled in `config.toml` under `[auth.hook.custom_access_token]`.
+
+**Hosted (required once per project):** After `db push`, open **Authentication → Hooks → Custom Access Token** and enable the hook with URI:
+
+`pg-functions://postgres/public/custom_access_token_hook`
+
+**After granting admin in SQL:** the user must sign out/in or call `refreshSession()` so the JWT picks up `is_admin: true`.
+
+**App usage:** `proxy.ts` blocks `/admin` when JWT `is_admin` is not true; `requireAdmin()` still checks `profiles.is_admin` in the database. Onboarding Finish calls `refreshAuthSession()` so `is_onboarded` updates immediately.
 
 ## Apply locally
 

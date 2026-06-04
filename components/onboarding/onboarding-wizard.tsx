@@ -1,11 +1,13 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useState, useTransition } from "react"
 
 import { StepAbout } from "@/components/onboarding/steps/step-about"
 import { StepFavourites } from "@/components/onboarding/steps/step-favourites"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { refreshAuthSession } from "@/lib/auth/refresh-session"
 import { is18OrOlder } from "@/lib/onboarding/age"
 import { completeOnboarding } from "@/lib/onboarding/complete"
 import { clearDraft, loadDraft, saveDraft } from "@/lib/onboarding/draft-storage"
@@ -18,6 +20,7 @@ type OnboardingWizardProps = {
 }
 
 export function OnboardingWizard({ options }: OnboardingWizardProps) {
+  const router = useRouter()
   const [draft, setDraft] = useState<OnboardingDraft>(() => loadDraft())
   const [dobError, setDobError] = useState<string | null>(null)
   const [finishError, setFinishError] = useState<string | null>(null)
@@ -82,7 +85,12 @@ export function OnboardingWizard({ options }: OnboardingWizardProps) {
       if (!result.ok) {
         setFinishError(result.error)
         saveDraft(draft)
+        return
       }
+
+      await refreshAuthSession()
+      router.push("/")
+      router.refresh()
     })
   }
 

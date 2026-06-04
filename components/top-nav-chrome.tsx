@@ -21,9 +21,14 @@ const tabs = [
   },
 ] as const
 
+type TopNavChromeProps = {
+  showAdminLink?: boolean
+}
+
 /** Client: brand, tabs, and search (pathname-aware). */
-export function TopNavChrome() {
+export function TopNavChrome({ showAdminLink = false }: TopNavChromeProps) {
   const pathname = usePathname()
+  const adminActive = pathname === "/admin" || pathname.startsWith("/admin/")
 
   return (
     <>
@@ -55,6 +60,19 @@ export function TopNavChrome() {
           )
         })}
       </nav>
+
+      {showAdminLink ? (
+        <Link
+          href="/admin"
+          className={cn(
+            "relative shrink-0 px-2 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground",
+            adminActive &&
+              "font-semibold text-foreground after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-primary",
+          )}
+        >
+          Admin
+        </Link>
+      ) : null}
 
       <NavSearch />
     </>
