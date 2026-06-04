@@ -71,6 +71,7 @@ export function SearchCombobox({
           <Combobox.Input
             id={inputId}
             placeholder={placeholder}
+            suppressHydrationWarning
             className={cn(
               "h-full min-w-0 flex-1 border-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground",
               selected ? "pl-0 pr-3" : "px-3",
