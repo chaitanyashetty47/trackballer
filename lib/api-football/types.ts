@@ -116,6 +116,7 @@ export type ApiPlayerProfileItem = {
     photo?: string | null;
   };
   statistics?: Array<{
+    team?: { id: number; name: string; logo?: string | null } | null;
     games?: { position?: string | null };
   }>;
 };

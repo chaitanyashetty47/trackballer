@@ -80,7 +80,9 @@ export function mapPlayerProfile(item: ApiPlayerProfileItem): PlayerInsert {
   const birthRaw = p.birth?.date;
   const birth_date =
     birthRaw && birthRaw.length >= 10 ? birthRaw.slice(0, 10) : null;
-  const position = item.statistics?.[0]?.games?.position;
+  const stats = item.statistics?.[0];
+  const position = stats?.games?.position;
+  const clubTeamId = stats?.team?.id ?? null;
 
   return {
     id: p.id,
@@ -92,6 +94,7 @@ export function mapPlayerProfile(item: ApiPlayerProfileItem): PlayerInsert {
     nationality: p.nationality ?? null,
     photo_url: p.photo ?? null,
     primary_position: normalizePosition(position),
+    club_team_id: clubTeamId,
   };
 }
 

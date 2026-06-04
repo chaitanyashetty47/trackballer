@@ -2,8 +2,8 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Search } from "lucide-react"
 
+import { NavSearch } from "@/components/search/nav-search"
 import { cn } from "@/lib/utils"
 
 const tabs = [
@@ -30,7 +30,7 @@ export function TopNav() {
         <span className="flex size-7 items-center justify-center rounded-md bg-primary">
           <span className="relative size-3.5 rounded-full bg-primary-foreground before:absolute before:inset-[3px] before:rounded-full before:bg-[conic-gradient(var(--primary)_0_20%,transparent_20%_40%,var(--primary)_40%_60%,transparent_60%_80%,var(--primary)_80%_100%)] before:opacity-90" />
         </span>
-        <span className="font-display text-[17px] font-bold tracking-tight">Penaltyboxd</span>
+        <span className="font-display text-[17px] font-bold tracking-tight">Trackballer</span>
       </Link>
 
       <nav
@@ -54,14 +54,9 @@ export function TopNav() {
         })}
       </nav>
 
+      <NavSearch />
+
       <div className="flex shrink-0 items-center gap-1">
-        <Link
-          href="/players"
-          className="flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-          aria-label="Search players"
-        >
-          <Search className="size-[18px]" strokeWidth={2} />
-        </Link>
         <Link
           href="/login"
           className="size-9 rounded-full border border-border bg-muted"
