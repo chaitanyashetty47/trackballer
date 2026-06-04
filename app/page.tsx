@@ -1,12 +1,54 @@
-export default function HomePage() {
+import { CompetitionStrip } from "@/components/home/competition-strip"
+import { LatestMatches } from "@/components/home/latest-matches"
+import { TrendingComments } from "@/components/home/trending-comments"
+import { TrendingPlayers } from "@/components/home/trending-players"
+import { YourTeamToday } from "@/components/home/your-team-today"
+import { getLatestResults, getWorldCupSeason } from "@/lib/catalog/fixtures"
+import { getCompetitionStrip } from "@/lib/home/leagues"
+import { getTrendingComments } from "@/lib/home/trending-comments"
+import { getTrendingPlayers } from "@/lib/home/trending-players"
+import { getYourTeamToday } from "@/lib/home/your-team-today"
+import { createClient } from "@/lib/supabase/server"
+
+export default async function HomePage() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const [strip, season, trendingPlayers, trendingComments, yourTeamToday] =
+    await Promise.all([
+      getCompetitionStrip(),
+      getWorldCupSeason(),
+      getTrendingPlayers(),
+      getTrendingComments(),
+      getYourTeamToday(user?.id ?? null),
+    ])
+
+  const latestMatches = season
+    ? await getLatestResults(season.id, { limit: 8 })
+    : []
+
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <p className="eyebrow mb-2">Fan ratings</p>
-      <h1 className="h-display mb-3">Rate the beautiful game</h1>
-      <p className="body-sm max-w-md text-muted-foreground">
-        Match performances, career scores, and World Cup fixtures. Start with the
-        tournament hub.
-      </p>
+    <div className="mx-auto max-w-6xl px-4 py-8">
+      <CompetitionStrip strip={strip} />
+
+      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-12">
+        <div className="space-y-8 lg:col-span-8">
+          <YourTeamToday items={yourTeamToday} />
+          <TrendingPlayers players={trendingPlayers} />
+
+          <div className="lg:hidden">
+            <LatestMatches fixtures={latestMatches} />
+          </div>
+
+          <TrendingComments comments={trendingComments} />
+        </div>
+
+        <aside className="hidden lg:col-span-4 lg:block">
+          <LatestMatches fixtures={latestMatches} />
+        </aside>
+      </div>
     </div>
   )
 }
