@@ -1,11 +1,7 @@
-"use client"
-
-import { usePathname } from "next/navigation"
 import Link from "next/link"
 
+import { AppShellClient } from "@/components/app-shell-client"
 import { TopNav } from "@/components/top-nav"
-
-const bareRoutes = ["/login", "/onboarding", "/admin"]
 
 type AppShellProps = {
   children: React.ReactNode
@@ -13,19 +9,22 @@ type AppShellProps = {
 
 function Footer() {
   return (
-    <footer className="border-t border-border bg-background py-8 mt-auto">
-      <div className="mx-auto max-w-5xl px-4 flex flex-col items-center justify-between gap-4 sm:flex-row">
+    <footer className="mt-auto border-t border-border bg-background py-8">
+      <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-4 px-4 sm:flex-row">
         <p className="text-sm text-muted-foreground">
           © {new Date().getFullYear()} Trackballer. All rights reserved.
         </p>
         <nav className="flex gap-6 text-sm text-muted-foreground">
-          <Link href="/guidelines" className="hover:text-foreground transition-colors">
+          <Link
+            href="/guidelines"
+            className="transition-colors hover:text-foreground"
+          >
             Guidelines
           </Link>
-          <Link href="/privacy" className="hover:text-foreground transition-colors">
+          <Link href="/privacy" className="transition-colors hover:text-foreground">
             Privacy
           </Link>
-          <Link href="/terms" className="hover:text-foreground transition-colors">
+          <Link href="/terms" className="transition-colors hover:text-foreground">
             Terms
           </Link>
         </nav>
@@ -35,18 +34,9 @@ function Footer() {
 }
 
 export function AppShell({ children }: AppShellProps) {
-  const pathname = usePathname()
-  const hideNav = bareRoutes.some((route) => pathname.startsWith(route))
-
-  if (hideNav) {
-    return <>{children}</>
-  }
-
   return (
-    <div className="flex min-h-svh flex-col">
-      <TopNav />
-      <main className="flex-1">{children}</main>
-      <Footer />
-    </div>
+    <AppShellClient nav={<TopNav />} footer={<Footer />}>
+      {children}
+    </AppShellClient>
   )
 }
