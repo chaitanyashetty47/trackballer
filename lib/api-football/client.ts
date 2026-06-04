@@ -110,6 +110,22 @@ export class ApiFootballClient {
     });
   }
 
+  getFixturesByDateWindow(
+    leagueId: number,
+    season: number,
+    from: string,
+    to: string,
+    timezone = "UTC",
+  ) {
+    return this.get<ApiFixtureItem[]>("/fixtures", {
+      league: leagueId,
+      season,
+      from,
+      to,
+      timezone,
+    });
+  }
+
   getFixturesByIds(ids: number[]) {
     if (ids.length === 0) {
       return Promise.resolve({

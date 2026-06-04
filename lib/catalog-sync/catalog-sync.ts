@@ -14,6 +14,14 @@ import {
 } from "./mappers";
 import { TERMINAL_STATUSES } from "./constants";
 import {
+  syncDailyWindow as runDailyWindow,
+  type DailyWindowOptions,
+} from "./daily-window";
+import {
+  syncMatchdayBatch as runMatchdayBatch,
+  type MatchdayBatchOptions,
+} from "./matchday-batch";
+import {
   isPlaceholderPlayerName,
   mergePlayerProfile,
   mergePlayerStub,
@@ -202,8 +210,8 @@ async function countRowsByFixtureId(
 
 export class CatalogSync {
   constructor(
-    private readonly db: Db,
-    private readonly api: ApiFootballClient = new ApiFootballClient(),
+    readonly db: Db,
+    readonly api: ApiFootballClient = new ApiFootballClient(),
   ) {}
 
   get rateLimitInfo() {
@@ -1017,5 +1025,15 @@ export class CatalogSync {
       completeFixtureIds,
       fixtures,
     };
+  }
+
+  /** Job 1 — forward fixture window (kickoff, status, postponements). */
+  syncDailyWindow(options?: DailyWindowOptions) {
+    return runDailyWindow(this, options);
+  }
+
+  /** Job 2 — today/yesterday refresh + terminal detail sync. */
+  syncMatchdayBatch(options?: MatchdayBatchOptions) {
+    return runMatchdayBatch(this, options);
   }
 }

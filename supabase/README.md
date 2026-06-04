@@ -199,6 +199,28 @@ Then open `http://localhost:3000/admin` while signed in.
 
 Run migration `20260604120000_team_of_the_week_featured.sql` (`featured_at` column). Publish a lineup per stage in `/admin/team-of-the-stage`, then click **Show on home & World Cup** — only one stage is live at a time on `/` and `/world-cup#totw`.
 
+## Scheduled sync (cron-job.org)
+
+Full reference: repo root **[CRON-SYNC.md](../../CRON-SYNC.md)**.
+
+| Job | Route | Typical schedule |
+|-----|--------|------------------|
+| Daily fixture window | `POST /api/cron/sync/daily` | 06:00 + 18:00 UTC |
+| Matchday batch | `POST /api/cron/sync/matchday` | Hourly |
+
+Both use the same auth as manual sync (`Authorization: Bearer` + `SYNC_ADMIN_SECRET`). Optional JSON body: `leagueId`, `seasonYear`, `limit` (matchday, default 15), `daysAhead` (daily, default 7).
+
+Staging smoke (`trackballer.vercel.app`):
+
+```bash
+curl -X POST "https://trackballer.vercel.app/api/cron/sync/daily" \
+  -H "Authorization: Bearer YOUR_SYNC_ADMIN_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"seasonYear":2022,"leagueId":1}'
+```
+
+Matchday only picks fixtures kicking off **today or yesterday (UTC)** — with a 2022 WC catalog in 2026, `candidatesInWindow` is often `0`; use daily to verify cron wiring.
+
 ## Notes
 
 - **Catalog writes** use the service role (sync jobs only), not the anon key.
