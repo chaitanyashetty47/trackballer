@@ -210,6 +210,8 @@ Full reference: repo root **[CRON-SYNC.md](../../CRON-SYNC.md)**.
 
 Both use the same auth as manual sync (`Authorization: Bearer` + `SYNC_ADMIN_SECRET`). Optional JSON body: `leagueId`, `seasonYear`, `limit` (matchday, default 15), `daysAhead` (daily, default 7).
 
+Cron routes return **`{ "status": "accepted" }` immediately** (Next.js `after()`), so [cron-job.org](https://cron-job.org)’s ~30s HTTP timeout is not hit; sync still runs on Vercel for up to 300s — check **Vercel → Logs** for `cron daily complete` / `cron matchday complete` or `failed`.
+
 Staging smoke (`trackballer.vercel.app`):
 
 ```bash
