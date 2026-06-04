@@ -13,12 +13,14 @@ export function LoginView({ authError }: LoginViewProps) {
         <Link
           href="/"
           className="mx-auto mb-4 flex size-12 items-center justify-center rounded-xl bg-primary"
-          aria-label="Penaltyboxd home"
+          aria-label="Trackballer home"
         >
           <span className="relative size-6 rounded-full bg-primary-foreground before:absolute before:inset-[5px] before:rounded-full before:bg-[conic-gradient(var(--primary)_0_20%,transparent_20%_40%,var(--primary)_40%_60%,transparent_60%_80%,var(--primary)_80%_100%)] before:opacity-90" />
         </Link>
-        <h1 className="font-display text-2xl font-bold tracking-tight">Penaltyboxd</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Rate the beautiful game</p>
+        <h1 className="font-display text-2xl font-bold tracking-tight">Trackballer</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Your hub to track your favorite players and teams
+        </p>
       </div>
 
       {authError && (
