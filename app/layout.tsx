@@ -20,8 +20,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata = {
-  title: "Penaltyboxd",
-  description: "Rate the beautiful game",
+  title: "Trackballer",
+  description: "Your hub to track your favorite players and teams",
 }
 
 export default function RootLayout({
