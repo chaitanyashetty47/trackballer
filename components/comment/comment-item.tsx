@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
 import Image from "next/image"
+import Link from "next/link"
+import { useState } from "react"
 import { CommentComposer } from "./comment-composer"
 import { Button } from "@/components/ui/button"
 import {
@@ -93,7 +94,12 @@ export function CommentItem({
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">@{displayName}</span>
+            <Link
+              href={`/profile/${comment.user_id}`}
+              className="font-medium text-foreground hover:underline"
+            >
+              @{displayName}
+            </Link>
             {comment.profile?.favourite_club?.logo_url && (
               <Image
                 src={comment.profile.favourite_club.logo_url}
