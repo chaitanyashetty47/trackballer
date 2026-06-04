@@ -1082,6 +1082,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          featured_at: string | null
           formation: string
           id: number
           published_at: string | null
@@ -1092,6 +1093,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          featured_at?: string | null
           formation?: string
           id?: never
           published_at?: string | null
@@ -1102,6 +1104,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          featured_at?: string | null
           formation?: string
           id?: never
           published_at?: string | null

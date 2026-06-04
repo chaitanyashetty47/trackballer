@@ -1,6 +1,8 @@
 import Link from "next/link"
 
+import { TeamOfTheStageStrip } from "@/components/home/team-of-the-stage-strip"
 import { MatchRow } from "@/components/match-row"
+import { getPublishedTeamOfTheStage } from "@/lib/home/team-of-the-stage"
 import {
   getLatestResults,
   getUpcomingFixtures,
@@ -18,12 +20,13 @@ export default async function WorldCupPage({ searchParams }: PageProps) {
   const roundName =
     roundFilter && roundFilter.length > 0 ? decodeURIComponent(roundFilter) : undefined
 
-  const [upcoming, results] = season
+  const [upcoming, results, totw] = season
     ? await Promise.all([
         getUpcomingFixtures(season.id, { roundName, limit: 8 }),
         getLatestResults(season.id, { roundName, limit: 8 }),
+        getPublishedTeamOfTheStage(),
       ])
-    : [[], []]
+    : [[], [], null]
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
@@ -34,6 +37,12 @@ export default async function WorldCupPage({ searchParams }: PageProps) {
           ? `Season ${season.year} catalog${roundName ? ` · ${roundName}` : ""}`
           : "Season not found in database."}
       </p>
+
+      {totw ? (
+        <section id="totw" className="mb-6 scroll-mt-8">
+          <TeamOfTheStageStrip team={totw} showWorldCupLink={false} />
+        </section>
+      ) : null}
 
       <section className="mb-6 rounded-lg border border-border bg-card p-4">
         <h2 className="h3 mb-2">Tournament data</h2>

@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation"
 
 import { TopNav } from "@/components/top-nav"
 
-const bareRoutes = ["/login", "/onboarding"]
+const bareRoutes = ["/login", "/onboarding", "/admin"]
 
 type AppShellProps = {
   children: React.ReactNode
