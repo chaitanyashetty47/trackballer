@@ -140,13 +140,13 @@ export async function getRecentRatings(userId: string): Promise<RecentRatingItem
       .select(`value, updated_at, player:players!match_ratings_player_id_fkey(${PLAYER_NAME_SELECT})`)
       .eq("user_id", userId)
       .order("updated_at", { ascending: false })
-      .limit(10),
+      .limit(3),
     supabase
       .from("career_ratings")
       .select(`value, updated_at, player:players!career_ratings_player_id_fkey(${PLAYER_NAME_SELECT})`)
       .eq("user_id", userId)
       .order("updated_at", { ascending: false })
-      .limit(10),
+      .limit(3),
   ])
 
   const combined: RecentRatingItem[] = []
@@ -163,7 +163,7 @@ export async function getRecentRatings(userId: string): Promise<RecentRatingItem
     (a, b) => new Date(b.ratedAt).getTime() - new Date(a.ratedAt).getTime(),
   )
 
-  return combined.slice(0, 10)
+  return combined.slice(0, 3)
 }
 
 export async function getRecentComments(userId: string): Promise<RecentCommentItem[]> {
@@ -185,7 +185,7 @@ export async function getRecentComments(userId: string): Promise<RecentCommentIt
     .eq("user_id", userId)
     .eq("is_deleted", false)
     .order("created_at", { ascending: false })
-    .limit(8)
+    .limit(3)
 
   if (error) {
     console.error("getRecentComments failed:", error.message)
