@@ -1,11 +1,13 @@
 import { CompetitionStrip } from "@/components/home/competition-strip"
 import { LatestMatches } from "@/components/home/latest-matches"
+import { TeamOfTheStageStrip } from "@/components/home/team-of-the-stage-strip"
 import { TrendingComments } from "@/components/home/trending-comments"
 import { TrendingPlayers } from "@/components/home/trending-players"
 import { YourTeamToday } from "@/components/home/your-team-today"
 import { getLatestResults, getWorldCupSeason } from "@/lib/catalog/fixtures"
 import { getCompetitionStrip } from "@/lib/home/leagues"
 import { getTrendingComments } from "@/lib/home/trending-comments"
+import { getPublishedTeamOfTheStage } from "@/lib/home/team-of-the-stage"
 import { getTrendingPlayers } from "@/lib/home/trending-players"
 import { getYourTeamToday } from "@/lib/home/your-team-today"
 import { createClient } from "@/lib/supabase/server"
@@ -16,13 +18,14 @@ export default async function HomePage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const [strip, season, trendingPlayers, trendingComments, yourTeamToday] =
+  const [strip, season, trendingPlayers, trendingComments, yourTeamToday, totw] =
     await Promise.all([
       getCompetitionStrip(),
       getWorldCupSeason(),
       getTrendingPlayers(),
       getTrendingComments(),
       getYourTeamToday(user?.id ?? null),
+      getPublishedTeamOfTheStage(),
     ])
 
   const latestMatches = season
@@ -43,6 +46,7 @@ export default async function HomePage() {
           </div>
 
           <TrendingComments comments={trendingComments} />
+          <TeamOfTheStageStrip team={totw} />
         </div>
 
         <aside className="hidden lg:col-span-4 lg:block">

@@ -165,6 +165,22 @@ curl --location --request POST 'http://localhost:3000/api/admin/sync/players/rep
 
 Re-run repair until `candidates` in the response is `0` (or run with a higher `limit` when quota allows).
 
+## Editorial admin (`/admin`)
+
+Super-admin UI for trending pins, Team of the Stage, comment moderation, and catalog name/photo fixes. Uses signed-in OAuth and `profiles.is_admin` (not `SYNC_ADMIN_SECRET`).
+
+Bootstrap your account in the Supabase SQL editor:
+
+```sql
+UPDATE public.profiles SET is_admin = true WHERE id = '<your-auth-user-uuid>';
+```
+
+Then open `http://localhost:3000/admin` while signed in.
+
+### Team of the Stage (featured lineup)
+
+Run migration `20260604120000_team_of_the_week_featured.sql` (`featured_at` column). Publish a lineup per stage in `/admin/team-of-the-stage`, then click **Show on home & World Cup** — only one stage is live at a time on `/` and `/world-cup#totw`.
+
 ## Notes
 
 - **Catalog writes** use the service role (sync jobs only), not the anon key.
