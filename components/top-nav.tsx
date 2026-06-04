@@ -26,7 +26,7 @@ export function TopNav() {
 
   return (
     <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border/80 bg-background/90 px-4 backdrop-blur-md">
-      <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="Penaltyboxd home">
+      <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="Trackballer home">
         <span className="flex size-7 items-center justify-center rounded-md bg-primary">
           <span className="relative size-3.5 rounded-full bg-primary-foreground before:absolute before:inset-[3px] before:rounded-full before:bg-[conic-gradient(var(--primary)_0_20%,transparent_20%_40%,var(--primary)_40%_60%,transparent_60%_80%,var(--primary)_80%_100%)] before:opacity-90" />
         </span>
