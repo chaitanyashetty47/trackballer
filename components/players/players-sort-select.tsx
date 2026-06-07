@@ -1,6 +1,6 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useRouter } from "nextjs-toploader/app"
 
 import { Label } from "@/components/ui/label"
 import { buildPlayersBrowseHref } from "@/lib/search/query"

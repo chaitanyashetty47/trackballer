@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter } from "nextjs-toploader/app"
 
 import { RecentSearches, rememberRecentSearch } from "./recent-searches"
 import { SearchForm } from "./search-form"

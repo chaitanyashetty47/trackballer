@@ -1,4 +1,5 @@
 import { Figtree, Geist_Mono, Outfit } from "next/font/google"
+import NextTopLoader from "nextjs-toploader"
 
 import "./globals.css"
 import { AppShell } from "@/components/app-shell"
@@ -40,6 +41,12 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-svh bg-background font-sans text-foreground">
+        <NextTopLoader
+          color="var(--primary)"
+          height={3}
+          showSpinner={false}
+          shadow={false}
+        />
         <AppShell>{children}</AppShell>
       </body>
     </html>

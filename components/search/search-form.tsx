@@ -1,6 +1,6 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useRouter } from "nextjs-toploader/app"
 import { FormEvent, useState } from "react"
 import { Search } from "lucide-react"
 

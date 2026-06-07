@@ -1,7 +1,7 @@
 "use client"
 
 import { Popover as PopoverPrimitive } from "@base-ui/react/popover"
-import { useRouter } from "next/navigation"
+import { useRouter } from "nextjs-toploader/app"
 import { useEffect, useRef, useState } from "react"
 import { Loader2, Search } from "lucide-react"
 

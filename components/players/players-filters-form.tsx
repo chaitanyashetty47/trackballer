@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { Search } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter } from "nextjs-toploader/app"
 import { FormEvent, useEffect, useState } from "react"
 
 import {
