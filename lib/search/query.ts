@@ -1,4 +1,4 @@
-import type { BrowseFilters } from "./types"
+import type { BrowseFilters, PlayerBrowseSort } from "./types"
 
 export const SEARCH_MIN_LENGTH = 1
 export const BROWSE_PAGE_SIZE = 50
@@ -38,6 +38,16 @@ function parseOptionalFloat(value: string | null | undefined): number | null {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+const VALID_SORTS: PlayerBrowseSort[] = ["rating-desc", "rating-asc"]
+
+function parseBrowseSort(value: string | null | undefined): PlayerBrowseSort {
+  const raw = value?.trim()
+  if (raw && VALID_SORTS.includes(raw as PlayerBrowseSort)) {
+    return raw as PlayerBrowseSort
+  }
+  return "rating-desc"
+}
+
 export function parseBrowseFilters(
   params: Record<string, string | string[] | undefined>,
 ): BrowseFilters {
@@ -63,6 +73,7 @@ export function parseBrowseFilters(
     ageMin: parseOptionalInt(pick("ageMin")),
     ageMax: parseOptionalInt(pick("ageMax")),
     minRating: parseOptionalFloat(pick("minRating")),
+    sort: parseBrowseSort(pick("sort")),
     page,
   }
 }
@@ -85,6 +96,7 @@ export function buildPlayersBrowseHref(filters: BrowseFilters): string {
   if (filters.ageMin != null) search.set("ageMin", String(filters.ageMin))
   if (filters.ageMax != null) search.set("ageMax", String(filters.ageMax))
   if (filters.minRating != null) search.set("minRating", String(filters.minRating))
+  if (filters.sort !== "rating-desc") search.set("sort", filters.sort)
   if (filters.page > 1) search.set("page", String(filters.page))
   const qs = search.toString()
   return qs ? `/players?${qs}` : "/players"

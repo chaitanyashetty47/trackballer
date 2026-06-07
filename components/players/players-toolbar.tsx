@@ -1,7 +1,5 @@
-import { ArrowUpDown } from "lucide-react"
-
 import { PlayersFiltersSheet } from "@/components/players/players-filters-sheet"
-import { PlayersToolbarSearch } from "@/components/players/players-toolbar-search"
+import { PlayersSortSelect } from "@/components/players/players-sort-select"
 import { buildPlayersBrowseHref } from "@/lib/search/query"
 import type { BrowseFilterOptions, BrowseFilters } from "@/lib/search/types"
 
@@ -13,25 +11,17 @@ type PlayersToolbarProps = {
 
 export function PlayersToolbar({ filters, options, resultCount }: PlayersToolbarProps) {
   const countLabel =
-    resultCount == null ? "players" : `${resultCount} player${resultCount === 1 ? "" : "s"}`
+    resultCount == null ? "— players" : `${resultCount} player${resultCount === 1 ? "" : "s"}`
 
   return (
-    <div className="space-y-3">
-      <PlayersToolbarSearch filters={filters} />
-
-      <div className="flex items-center gap-2">
-        <PlayersFiltersSheet filters={filters} options={options} />
-        <div className="flex min-w-0 flex-1 items-center gap-1.5 text-xs text-muted-foreground">
-          <ArrowUpDown className="size-3.5 shrink-0" aria-hidden />
-          <span>Sort: Highest rated</span>
-        </div>
-        <span className="shrink-0 text-xs text-muted-foreground">
-          <span className="font-mono font-semibold tabular-nums text-foreground">
-            {resultCount ?? "—"}
-          </span>{" "}
+    <div className="flex flex-wrap items-center gap-2">
+      <PlayersFiltersSheet filters={filters} options={options} />
+      <PlayersSortSelect filters={filters} className="flex-1 lg:flex-none" />
+      <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+        <span className="font-mono font-semibold tabular-nums text-foreground">
           {countLabel}
         </span>
-      </div>
+      </span>
     </div>
   )
 }

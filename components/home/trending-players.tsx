@@ -48,7 +48,7 @@ export function TrendingPlayers({ players }: TrendingPlayersProps) {
         <div className="rounded-lg border border-border bg-card p-6 text-center">
           <p className="text-sm font-medium">No trending players yet</p>
           <p className="body-sm mt-1 text-muted-foreground">
-            Rate players after big matches to see who fans are talking about.
+            Featured players will show here once an admin pins them.
           </p>
         </div>
       ) : (

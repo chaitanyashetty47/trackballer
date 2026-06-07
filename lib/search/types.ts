@@ -11,6 +11,8 @@ export type PlayerListItem = {
   clubName: string | null
 }
 
+export type PlayerBrowseSort = "rating-desc" | "rating-asc"
+
 export type BrowseFilters = {
   q: string | null
   nationalTeamId: number | null
@@ -20,6 +22,7 @@ export type BrowseFilters = {
   ageMin: number | null
   ageMax: number | null
   minRating: number | null
+  sort: PlayerBrowseSort
   page: number
 }
 

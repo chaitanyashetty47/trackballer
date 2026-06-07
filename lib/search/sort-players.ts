@@ -1,15 +1,28 @@
 import { mapPlayerBrowseRow, type PlayerBrowseRow } from "./player-map"
-import type { PlayerListItem } from "./types"
+import type { PlayerBrowseSort, PlayerListItem } from "./types"
 
-export function sortByHighestRated(players: PlayerListItem[]): PlayerListItem[] {
+export function sortPlayers(
+  players: PlayerListItem[],
+  sort: PlayerBrowseSort = "rating-desc",
+): PlayerListItem[] {
+  const ratingOrder = sort === "rating-asc" ? 1 : -1
+
   return [...players].sort(
     (a, b) =>
-      b.displayScore - a.displayScore ||
+      ratingOrder * (a.displayScore - b.displayScore) ||
       a.displayName.localeCompare(b.displayName),
   )
 }
 
-export function mapAndSortPlayerRows(rows: unknown[]): PlayerListItem[] {
+/** @deprecated Use sortPlayers with an explicit sort option. */
+export function sortByHighestRated(players: PlayerListItem[]): PlayerListItem[] {
+  return sortPlayers(players, "rating-desc")
+}
+
+export function mapAndSortPlayerRows(
+  rows: unknown[],
+  sort: PlayerBrowseSort = "rating-desc",
+): PlayerListItem[] {
   const byId = new Map<number, PlayerListItem>()
 
   for (const row of rows) {
@@ -20,5 +33,5 @@ export function mapAndSortPlayerRows(rows: unknown[]): PlayerListItem[] {
     }
   }
 
-  return sortByHighestRated([...byId.values()])
+  return sortPlayers([...byId.values()], sort)
 }
