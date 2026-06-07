@@ -1,5 +1,6 @@
 import { formatPlayerDisplayName } from "@/lib/player/display-name"
 import { getOnboardingOptions } from "@/lib/onboarding/options"
+import { resolveDisplayAvatar, type AvatarSource } from "@/lib/profile/display-avatar"
 import { createClient } from "@/lib/supabase/server"
 
 import type {
@@ -12,14 +13,17 @@ import type {
 
 const PROFILE_SELECT = `
   id,
+  username,
   display_name,
   avatar_url,
-  location,
+  google_avatar_url,
+  x_avatar_url,
+  avatar_source,
+  country_code,
   created_at,
   twitter_handle,
+  twitter_verified_at,
   instagram_handle,
-  tiktok_handle,
-  reddit_handle,
   favourite_club:teams!profiles_favourite_club_id_fkey(id, name, logo_url, code),
   favourite_national:teams!profiles_favourite_national_team_id_fkey(id, name, logo_url, code)
 `
@@ -39,19 +43,36 @@ function mapTeam(raw: unknown): ProfileTeam | null {
 }
 
 function mapProfileRow(row: Record<string, unknown>): ProfileView {
+  const googleAvatarUrl =
+    typeof row.google_avatar_url === "string" ? row.google_avatar_url : null
+  const xAvatarUrl = typeof row.x_avatar_url === "string" ? row.x_avatar_url : null
+  const avatarSource =
+    row.avatar_source === "google" || row.avatar_source === "x"
+      ? (row.avatar_source as AvatarSource)
+      : null
+
   return {
     id: String(row.id),
+    username: typeof row.username === "string" ? row.username : null,
     displayName: String(row.display_name),
-    avatarUrl: typeof row.avatar_url === "string" ? row.avatar_url : null,
-    location: typeof row.location === "string" ? row.location : null,
+    avatarUrl: resolveDisplayAvatar({
+      avatar_url: typeof row.avatar_url === "string" ? row.avatar_url : null,
+      google_avatar_url: googleAvatarUrl,
+      x_avatar_url: xAvatarUrl,
+      avatar_source: avatarSource,
+    }),
+    googleAvatarUrl,
+    xAvatarUrl,
+    avatarSource,
+    countryCode: typeof row.country_code === "string" ? row.country_code : null,
     memberSince: String(row.created_at),
     favouriteClub: mapTeam(row.favourite_club),
     favouriteNationalTeam: mapTeam(row.favourite_national),
     twitterHandle: typeof row.twitter_handle === "string" ? row.twitter_handle : null,
+    twitterVerifiedAt:
+      typeof row.twitter_verified_at === "string" ? row.twitter_verified_at : null,
     instagramHandle:
       typeof row.instagram_handle === "string" ? row.instagram_handle : null,
-    tiktokHandle: typeof row.tiktok_handle === "string" ? row.tiktok_handle : null,
-    redditHandle: typeof row.reddit_handle === "string" ? row.reddit_handle : null,
   }
 }
 
@@ -65,6 +86,24 @@ export async function getProfileById(userId: string): Promise<ProfileView | null
 
   if (error || !data) {
     if (error) console.error("getProfileById failed:", error.message)
+    return null
+  }
+
+  return mapProfileRow(data as Record<string, unknown>)
+}
+
+export async function getProfileByUsername(
+  username: string,
+): Promise<ProfileView | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("profiles")
+    .select(PROFILE_SELECT)
+    .ilike("username", username)
+    .maybeSingle()
+
+  if (error || !data) {
+    if (error) console.error("getProfileByUsername failed:", error.message)
     return null
   }
 

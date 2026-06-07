@@ -31,16 +31,19 @@ export async function TopNavAuth() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, avatar_url")
+    .select("display_name, avatar_url, username")
     .eq("id", user.id)
     .maybeSingle()
 
   const name = profile?.display_name?.trim() || "Fan"
   const avatarUrl = profile?.avatar_url
+  const profileHref = profile?.username
+    ? `/u/${profile.username}`
+    : "/onboarding"
 
   return (
     <Link
-      href={`/profile/${user.id}`}
+      href={profileHref}
       className={cn(
         "relative flex size-9 shrink-0 overflow-hidden rounded-full border border-border bg-muted",
         "transition-opacity hover:opacity-90",

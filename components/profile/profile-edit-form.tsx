@@ -3,10 +3,15 @@
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 
+import { AvatarSourcePicker } from "@/components/profile/avatar-source-picker"
+import { ConnectXButton } from "@/components/profile/connect-x-button"
 import { PlasticFanDialog } from "@/components/profile/plastic-fan-dialog"
 import { Button } from "@/components/ui/button"
+import { CountryDropdown } from "@/components/onboarding/country-dropdown"
 import { Input } from "@/components/ui/input"
 import { SearchCombobox } from "@/components/ui/search-combobox"
+import type { AvatarSource } from "@/lib/profile/display-avatar"
+import { defaultAvatarSource } from "@/lib/profile/display-avatar"
 import { updateProfile } from "@/lib/profile/actions/update-profile"
 import type { ProfileView } from "@/lib/profile/types"
 import type { OnboardingOptions } from "@/lib/onboarding/types"
@@ -22,20 +27,25 @@ export function ProfileEditForm({ profile, teamOptions }: ProfileEditFormProps) 
   const [message, setMessage] = useState<string | null>(null)
 
   const [displayName, setDisplayName] = useState(profile.displayName)
-  const [location, setLocation] = useState(profile.location ?? "")
-  const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl ?? "")
+  const [countryCode, setCountryCode] = useState(profile.countryCode)
   const [favouriteClubId, setFavouriteClubId] = useState<number | null>(
     profile.favouriteClub?.id ?? null,
   )
   const [favouriteNationalTeamId, setFavouriteNationalTeamId] = useState<
     number | null
   >(profile.favouriteNationalTeam?.id ?? null)
-  const [twitterHandle, setTwitterHandle] = useState(profile.twitterHandle ?? "")
   const [instagramHandle, setInstagramHandle] = useState(
     profile.instagramHandle ?? "",
   )
-  const [tiktokHandle, setTiktokHandle] = useState(profile.tiktokHandle ?? "")
-  const [redditHandle, setRedditHandle] = useState(profile.redditHandle ?? "")
+  const [avatarSource, setAvatarSource] = useState<AvatarSource>(
+    profile.avatarSource ??
+      defaultAvatarSource({
+        google_avatar_url: profile.googleAvatarUrl,
+        x_avatar_url: profile.xAvatarUrl,
+      }),
+  )
+
+  const showAvatarPicker = Boolean(profile.googleAvatarUrl && profile.xAvatarUrl)
 
   const [plasticOpen, setPlasticOpen] = useState(false)
   const [plasticConfirmed, setPlasticConfirmed] = useState(false)
@@ -43,18 +53,20 @@ export function ProfileEditForm({ profile, teamOptions }: ProfileEditFormProps) 
   const initialClubId = profile.favouriteClub?.id ?? null
 
   function submit(plasticFanConfirmed: boolean) {
+    if (!countryCode) {
+      setMessage("Choose your country of origin.")
+      return
+    }
+
     startTransition(async () => {
       const result = await updateProfile({
         displayName,
-        location,
-        avatarUrl,
+        countryCode,
         favouriteClubId,
         favouriteNationalTeamId,
-        twitterHandle,
         instagramHandle,
-        tiktokHandle,
-        redditHandle,
         plasticFanConfirmed,
+        avatarSource: showAvatarPicker ? avatarSource : undefined,
       })
 
       if (!result.ok) {
@@ -97,6 +109,13 @@ export function ProfileEditForm({ profile, teamOptions }: ProfileEditFormProps) 
       <h2 className="h3 mb-4">Edit profile</h2>
 
       <div className="space-y-4">
+        {profile.username ? (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium">Username</span>
+            <p className="text-sm text-muted-foreground">@{profile.username}</p>
+          </div>
+        ) : null}
+
         <div className="flex flex-col gap-1.5">
           <label htmlFor="profile-display-name" className="text-sm font-medium">
             Display name
@@ -110,28 +129,15 @@ export function ProfileEditForm({ profile, teamOptions }: ProfileEditFormProps) 
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="profile-location" className="text-sm font-medium">
-            Location
+          <label htmlFor="profile-country" className="text-sm font-medium">
+            Country of origin
           </label>
-          <Input
-            id="profile-location"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="City, country"
+          <CountryDropdown
+            id="profile-country"
+            valueAlpha2={countryCode}
+            onChange={(country) => setCountryCode(country.alpha2.toUpperCase())}
             disabled={pending}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="profile-avatar" className="text-sm font-medium">
-            Avatar URL
-          </label>
-          <Input
-            id="profile-avatar"
-            value={avatarUrl}
-            onChange={(e) => setAvatarUrl(e.target.value)}
-            placeholder="https://…"
-            disabled={pending}
+            placeholder="Select your country"
           />
         </div>
 
@@ -161,61 +167,41 @@ export function ProfileEditForm({ profile, teamOptions }: ProfileEditFormProps) 
           disabled={pending}
         />
 
+        {showAvatarPicker ? (
+          <AvatarSourcePicker
+            googleAvatarUrl={profile.googleAvatarUrl!}
+            xAvatarUrl={profile.xAvatarUrl!}
+            value={avatarSource}
+            onChange={setAvatarSource}
+            disabled={pending}
+          />
+        ) : null}
+
         <fieldset className="space-y-3 border-t border-border pt-4">
           <legend className="text-sm font-medium">Social links</legend>
-          <p className="text-xs text-muted-foreground">
-            Paste a handle or full profile URL. We store handles only.
-          </p>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="profile-twitter" className="text-sm font-medium">
-                X (Twitter)
-              </label>
-              <Input
-                id="profile-twitter"
-                value={twitterHandle}
-                onChange={(e) => setTwitterHandle(e.target.value)}
-                placeholder="@handle or profile URL"
-                disabled={pending}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="profile-instagram" className="text-sm font-medium">
-                Instagram
-              </label>
-              <Input
-                id="profile-instagram"
-                value={instagramHandle}
-                onChange={(e) => setInstagramHandle(e.target.value)}
-                placeholder="@handle or profile URL"
-                disabled={pending}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="profile-tiktok" className="text-sm font-medium">
-                TikTok
-              </label>
-              <Input
-                id="profile-tiktok"
-                value={tiktokHandle}
-                onChange={(e) => setTiktokHandle(e.target.value)}
-                placeholder="@handle or profile URL"
-                disabled={pending}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="profile-reddit" className="text-sm font-medium">
-                Reddit
-              </label>
-              <Input
-                id="profile-reddit"
-                value={redditHandle}
-                onChange={(e) => setRedditHandle(e.target.value)}
-                placeholder="u/name or profile URL"
-                disabled={pending}
-              />
-            </div>
+          <div className="space-y-2">
+            <p className="text-sm font-medium">X (Twitter)</p>
+            <ConnectXButton
+              twitterHandle={profile.twitterHandle}
+              twitterVerifiedAt={profile.twitterVerifiedAt}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="profile-instagram" className="text-sm font-medium">
+              Instagram
+            </label>
+            <Input
+              id="profile-instagram"
+              value={instagramHandle}
+              onChange={(e) => setInstagramHandle(e.target.value)}
+              placeholder="@handle or profile URL"
+              disabled={pending}
+            />
+            <p className="text-xs text-muted-foreground">
+              Not verified — only add a handle you own.
+            </p>
           </div>
         </fieldset>
 

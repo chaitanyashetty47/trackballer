@@ -12,6 +12,7 @@ import { is18OrOlder } from "@/lib/onboarding/age"
 import { completeOnboarding } from "@/lib/onboarding/complete"
 import { clearDraft, loadDraft, saveDraft } from "@/lib/onboarding/draft-storage"
 import type { OnboardingDraft, OnboardingOptions } from "@/lib/onboarding/types"
+import { validateUsernameFormat } from "@/lib/profile/validate-username"
 
 const TOTAL_STEPS = 2
 
@@ -23,6 +24,8 @@ export function OnboardingWizard({ options }: OnboardingWizardProps) {
   const router = useRouter()
   const [draft, setDraft] = useState<OnboardingDraft>(() => loadDraft())
   const [dobError, setDobError] = useState<string | null>(null)
+  const [usernameError, setUsernameError] = useState<string | null>(null)
+  const [countryError, setCountryError] = useState<string | null>(null)
   const [finishError, setFinishError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -37,16 +40,39 @@ export function OnboardingWizard({ options }: OnboardingWizardProps) {
   const progressValue = (draft.step / TOTAL_STEPS) * 100
 
   function validateStep1(): boolean {
+    let valid = true
+
+    if (!draft.username) {
+      setUsernameError("Username is required.")
+      valid = false
+    } else {
+      const formatError = validateUsernameFormat(draft.username)
+      if (formatError) {
+        setUsernameError(formatError)
+        valid = false
+      } else {
+        setUsernameError(null)
+      }
+    }
+
     if (!draft.dateOfBirth) {
       setDobError("Date of birth is required.")
-      return false
-    }
-    if (!is18OrOlder(draft.dateOfBirth)) {
+      valid = false
+    } else if (!is18OrOlder(draft.dateOfBirth)) {
       setDobError("You must be 18 or older.")
-      return false
+      valid = false
+    } else {
+      setDobError(null)
     }
-    setDobError(null)
-    return true
+
+    if (!draft.countryCode) {
+      setCountryError("Country of origin is required.")
+      valid = false
+    } else {
+      setCountryError(null)
+    }
+
+    return valid
   }
 
   function handleContinue() {
@@ -76,8 +102,9 @@ export function OnboardingWizard({ options }: OnboardingWizardProps) {
 
     startTransition(async () => {
       const result = await completeOnboarding({
+        username: draft.username,
         dateOfBirth: draft.dateOfBirth,
-        location: draft.location,
+        countryCode: draft.countryCode,
         favouriteClubId: draft.favouriteClubId,
         favouriteNationalTeamId: draft.favouriteNationalTeamId,
       })
@@ -110,7 +137,13 @@ export function OnboardingWizard({ options }: OnboardingWizardProps) {
       </div>
 
       {draft.step === 1 && (
-        <StepAbout draft={draft} onChange={updateDraft} dobError={dobError} />
+        <StepAbout
+          draft={draft}
+          onChange={updateDraft}
+          dobError={dobError}
+          usernameError={usernameError}
+          countryError={countryError}
+        />
       )}
       {draft.step === 2 && (
         <StepFavourites

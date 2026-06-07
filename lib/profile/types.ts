@@ -1,4 +1,5 @@
 import type { TeamOption } from "@/lib/onboarding/types"
+import type { AvatarSource } from "@/lib/profile/display-avatar"
 
 export type ProfileTeam = {
   id: number
@@ -9,16 +10,19 @@ export type ProfileTeam = {
 
 export type ProfileView = {
   id: string
+  username: string | null
   displayName: string
   avatarUrl: string | null
-  location: string | null
+  googleAvatarUrl: string | null
+  xAvatarUrl: string | null
+  avatarSource: AvatarSource | null
+  countryCode: string | null
   memberSince: string
   favouriteClub: ProfileTeam | null
   favouriteNationalTeam: ProfileTeam | null
   twitterHandle: string | null
+  twitterVerifiedAt: string | null
   instagramHandle: string | null
-  tiktokHandle: string | null
-  redditHandle: string | null
 }
 
 export type ProfileStats = {

@@ -8,6 +8,7 @@ export type Team = {
 
 export type CommentProfile = {
   id: string
+  username: string | null
   display_name: string
   avatar_url: string | null
   favourite_club: Team | null

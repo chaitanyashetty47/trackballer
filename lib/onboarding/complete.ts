@@ -26,14 +26,20 @@ export async function completeOnboarding(
     return { ok: false, error: message }
   }
 
-  const { dateOfBirth, location, favouriteClubId, favouriteNationalTeamId } =
-    parsed.data
+  const {
+    username,
+    dateOfBirth,
+    countryCode,
+    favouriteClubId,
+    favouriteNationalTeamId,
+  } = parsed.data
 
   const { error: updateError } = await supabase
     .from("profiles")
     .update({
+      username,
       date_of_birth: dateOfBirth,
-      location,
+      country_code: countryCode,
       favourite_club_id: favouriteClubId,
       favourite_national_team_id: favouriteNationalTeamId,
       onboarding_completed_at: new Date().toISOString(),
@@ -41,6 +47,9 @@ export async function completeOnboarding(
     .eq("id", user.id)
 
   if (updateError) {
+    if (updateError.code === "23505") {
+      return { ok: false, error: "That username is taken. Pick another." }
+    }
     return { ok: false, error: "Could not save your profile. Try again." }
   }
 

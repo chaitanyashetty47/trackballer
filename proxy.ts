@@ -1,8 +1,10 @@
 import { createServerClient } from "@supabase/ssr"
 import { type NextRequest, NextResponse } from "next/server"
 
+import { isOnboardingBypassPath } from "@/lib/auth/onboarding-gate"
 import { getPostOAuthRedirectPath } from "@/lib/auth/post-oauth-redirect"
 import { readSessionClaims } from "@/lib/auth/session-claims"
+import { syncOAuthProfilesFromAuth } from "@/lib/auth/sync-oauth-profiles"
 import { getSupabasePublishableConfig } from "@/lib/supabase/env"
 
 const AUTH_QUERY_PARAMS = ["code", "state", "error", "error_description"] as const
@@ -46,6 +48,7 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(loginUrl)
     }
 
+    await syncOAuthProfilesFromAuth(supabase)
     const destination = await getPostOAuthRedirectPath(supabase)
     const redirectUrl = stripAuthParams(new URL(destination, request.url))
     const redirectResponse = NextResponse.redirect(redirectUrl)
@@ -63,6 +66,24 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const pathname = request.nextUrl.pathname
+
+  if (user && !isOnboardingBypassPath(pathname)) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarding_completed_at, username, country_code")
+      .eq("id", user.id)
+      .maybeSingle()
+
+    const onboardingDone =
+      profile?.onboarding_completed_at &&
+      profile.username &&
+      profile.country_code
+
+    if (!onboardingDone) {
+      return NextResponse.redirect(new URL("/onboarding", request.url))
+    }
+  }
+
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
     if (!user) {
       const loginUrl = new URL("/login", request.url)
