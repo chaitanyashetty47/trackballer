@@ -1,5 +1,5 @@
 import { TeamFlag } from "@/components/team-flag"
-import { getCountryLabel } from "@/lib/countries/iso-countries"
+import { countries } from "country-data-list"
 import type { ProfileView } from "@/lib/profile/types"
 import { socialProfileUrl } from "@/lib/profile/validate-social-handles"
 
@@ -51,7 +51,11 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
     Boolean,
   ) as NonNullable<ProfileView["favouriteClub"]>[]
 
-  const countryLabel = getCountryLabel(profile.countryCode)
+  const countryLabel = profile.countryCode
+    ? (countries.all.find(
+        (c) => c.alpha2?.toUpperCase() === profile.countryCode?.toUpperCase(),
+      )?.name ?? null)
+    : null
 
   const socials: { label: string; href: string; verified?: boolean }[] = []
   if (profile.twitterHandle && profile.twitterVerifiedAt) {

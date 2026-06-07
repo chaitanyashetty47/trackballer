@@ -940,6 +940,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_source: string | null
           avatar_url: string | null
           country_code: string | null
           created_at: string
@@ -948,6 +949,7 @@ export type Database = {
           favourite_club_id: number | null
           favourite_national_team_id: number | null
           favourite_player_id: number | null
+          google_avatar_url: string | null
           id: string
           instagram_handle: string | null
           is_admin: boolean
@@ -960,8 +962,10 @@ export type Database = {
           twitter_verified_at: string | null
           updated_at: string
           username: string | null
+          x_avatar_url: string | null
         }
         Insert: {
+          avatar_source?: string | null
           avatar_url?: string | null
           country_code?: string | null
           created_at?: string
@@ -970,6 +974,7 @@ export type Database = {
           favourite_club_id?: number | null
           favourite_national_team_id?: number | null
           favourite_player_id?: number | null
+          google_avatar_url?: string | null
           id: string
           instagram_handle?: string | null
           is_admin?: boolean
@@ -982,8 +987,10 @@ export type Database = {
           twitter_verified_at?: string | null
           updated_at?: string
           username?: string | null
+          x_avatar_url?: string | null
         }
         Update: {
+          avatar_source?: string | null
           avatar_url?: string | null
           country_code?: string | null
           created_at?: string
@@ -992,6 +999,7 @@ export type Database = {
           favourite_club_id?: number | null
           favourite_national_team_id?: number | null
           favourite_player_id?: number | null
+          google_avatar_url?: string | null
           id?: string
           instagram_handle?: string | null
           is_admin?: boolean
@@ -1004,6 +1012,7 @@ export type Database = {
           twitter_verified_at?: string | null
           updated_at?: string
           username?: string | null
+          x_avatar_url?: string | null
         }
         Relationships: [
           {

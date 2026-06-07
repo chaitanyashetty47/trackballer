@@ -3,12 +3,15 @@
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 
+import { AvatarSourcePicker } from "@/components/profile/avatar-source-picker"
 import { ConnectXButton } from "@/components/profile/connect-x-button"
 import { PlasticFanDialog } from "@/components/profile/plastic-fan-dialog"
 import { Button } from "@/components/ui/button"
-import { CountrySelect } from "@/components/ui/country-select"
+import { CountryDropdown } from "@/components/onboarding/country-dropdown"
 import { Input } from "@/components/ui/input"
 import { SearchCombobox } from "@/components/ui/search-combobox"
+import type { AvatarSource } from "@/lib/profile/display-avatar"
+import { defaultAvatarSource } from "@/lib/profile/display-avatar"
 import { updateProfile } from "@/lib/profile/actions/update-profile"
 import type { ProfileView } from "@/lib/profile/types"
 import type { OnboardingOptions } from "@/lib/onboarding/types"
@@ -34,6 +37,15 @@ export function ProfileEditForm({ profile, teamOptions }: ProfileEditFormProps) 
   const [instagramHandle, setInstagramHandle] = useState(
     profile.instagramHandle ?? "",
   )
+  const [avatarSource, setAvatarSource] = useState<AvatarSource>(
+    profile.avatarSource ??
+      defaultAvatarSource({
+        google_avatar_url: profile.googleAvatarUrl,
+        x_avatar_url: profile.xAvatarUrl,
+      }),
+  )
+
+  const showAvatarPicker = Boolean(profile.googleAvatarUrl && profile.xAvatarUrl)
 
   const [plasticOpen, setPlasticOpen] = useState(false)
   const [plasticConfirmed, setPlasticConfirmed] = useState(false)
@@ -54,6 +66,7 @@ export function ProfileEditForm({ profile, teamOptions }: ProfileEditFormProps) 
         favouriteNationalTeamId,
         instagramHandle,
         plasticFanConfirmed,
+        avatarSource: showAvatarPicker ? avatarSource : undefined,
       })
 
       if (!result.ok) {
@@ -115,12 +128,18 @@ export function ProfileEditForm({ profile, teamOptions }: ProfileEditFormProps) 
           />
         </div>
 
-        <CountrySelect
-          value={countryCode}
-          onChange={setCountryCode}
-          disabled={pending}
-          required
-        />
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="profile-country" className="text-sm font-medium">
+            Country of origin
+          </label>
+          <CountryDropdown
+            id="profile-country"
+            valueAlpha2={countryCode}
+            onChange={(country) => setCountryCode(country.alpha2.toUpperCase())}
+            disabled={pending}
+            placeholder="Select your country"
+          />
+        </div>
 
         <SearchCombobox
           label="Favourite club"
@@ -147,6 +166,16 @@ export function ProfileEditForm({ profile, teamOptions }: ProfileEditFormProps) 
           }
           disabled={pending}
         />
+
+        {showAvatarPicker ? (
+          <AvatarSourcePicker
+            googleAvatarUrl={profile.googleAvatarUrl!}
+            xAvatarUrl={profile.xAvatarUrl!}
+            value={avatarSource}
+            onChange={setAvatarSource}
+            disabled={pending}
+          />
+        ) : null}
 
         <fieldset className="space-y-3 border-t border-border pt-4">
           <legend className="text-sm font-medium">Social links</legend>

@@ -4,7 +4,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { isOnboardingBypassPath } from "@/lib/auth/onboarding-gate"
 import { getPostOAuthRedirectPath } from "@/lib/auth/post-oauth-redirect"
 import { readSessionClaims } from "@/lib/auth/session-claims"
-import { syncXProfileFromAuth } from "@/lib/auth/sync-x-profile"
+import { syncOAuthProfilesFromAuth } from "@/lib/auth/sync-oauth-profiles"
 import { getSupabasePublishableConfig } from "@/lib/supabase/env"
 
 const AUTH_QUERY_PARAMS = ["code", "state", "error", "error_description"] as const
@@ -48,7 +48,7 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(loginUrl)
     }
 
-    await syncXProfileFromAuth(supabase)
+    await syncOAuthProfilesFromAuth(supabase)
     const destination = await getPostOAuthRedirectPath(supabase)
     const redirectUrl = stripAuthParams(new URL(destination, request.url))
     const redirectResponse = NextResponse.redirect(redirectUrl)

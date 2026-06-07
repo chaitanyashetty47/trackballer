@@ -1,5 +1,6 @@
 import { formatPlayerDisplayName } from "@/lib/player/display-name"
 import { getOnboardingOptions } from "@/lib/onboarding/options"
+import { resolveDisplayAvatar, type AvatarSource } from "@/lib/profile/display-avatar"
 import { createClient } from "@/lib/supabase/server"
 
 import type {
@@ -15,6 +16,9 @@ const PROFILE_SELECT = `
   username,
   display_name,
   avatar_url,
+  google_avatar_url,
+  x_avatar_url,
+  avatar_source,
   country_code,
   created_at,
   twitter_handle,
@@ -39,11 +43,27 @@ function mapTeam(raw: unknown): ProfileTeam | null {
 }
 
 function mapProfileRow(row: Record<string, unknown>): ProfileView {
+  const googleAvatarUrl =
+    typeof row.google_avatar_url === "string" ? row.google_avatar_url : null
+  const xAvatarUrl = typeof row.x_avatar_url === "string" ? row.x_avatar_url : null
+  const avatarSource =
+    row.avatar_source === "google" || row.avatar_source === "x"
+      ? (row.avatar_source as AvatarSource)
+      : null
+
   return {
     id: String(row.id),
     username: typeof row.username === "string" ? row.username : null,
     displayName: String(row.display_name),
-    avatarUrl: typeof row.avatar_url === "string" ? row.avatar_url : null,
+    avatarUrl: resolveDisplayAvatar({
+      avatar_url: typeof row.avatar_url === "string" ? row.avatar_url : null,
+      google_avatar_url: googleAvatarUrl,
+      x_avatar_url: xAvatarUrl,
+      avatar_source: avatarSource,
+    }),
+    googleAvatarUrl,
+    xAvatarUrl,
+    avatarSource,
     countryCode: typeof row.country_code === "string" ? row.country_code : null,
     memberSince: String(row.created_at),
     favouriteClub: mapTeam(row.favourite_club),

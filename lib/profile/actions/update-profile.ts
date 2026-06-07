@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
+import { buildAvatarCacheUpdate } from "@/lib/profile/display-avatar"
 import { normalizeSocialHandle } from "@/lib/profile/validate-social-handles"
 import { countryCodeSchema } from "@/lib/profile/validate-username"
 import { createClient } from "@/lib/supabase/server"
@@ -23,6 +24,7 @@ const updateProfileSchema = z.object({
       }
       return result.handle
     }),
+  avatarSource: z.enum(["google", "x"]).optional(),
 })
 
 export type UpdateProfileResult = { ok: true } | { ok: false; error: string }
@@ -47,7 +49,9 @@ export async function updateProfile(input: unknown): Promise<UpdateProfileResult
 
   const { data: existing, error: fetchError } = await supabase
     .from("profiles")
-    .select("favourite_club_id, onboarding_completed_at, username")
+    .select(
+      "favourite_club_id, onboarding_completed_at, username, google_avatar_url, x_avatar_url, avatar_source, avatar_url",
+    )
     .eq("id", user.id)
     .single()
 
@@ -70,6 +74,16 @@ export async function updateProfile(input: unknown): Promise<UpdateProfileResult
     }
   }
 
+  const avatarFields =
+    data.avatarSource != null
+      ? buildAvatarCacheUpdate({
+          avatar_source: data.avatarSource,
+          google_avatar_url: existing.google_avatar_url,
+          x_avatar_url: existing.x_avatar_url,
+          avatar_url: existing.avatar_url,
+        })
+      : {}
+
   const { error: updateError } = await supabase
     .from("profiles")
     .update({
@@ -78,6 +92,7 @@ export async function updateProfile(input: unknown): Promise<UpdateProfileResult
       favourite_club_id: data.favouriteClubId,
       favourite_national_team_id: data.favouriteNationalTeamId,
       instagram_handle: data.instagramHandle,
+      ...avatarFields,
     })
     .eq("id", user.id)
 

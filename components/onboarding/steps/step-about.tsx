@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 
 import { DobDatePicker } from "@/components/onboarding/dob-date-picker"
-import { CountrySelect } from "@/components/ui/country-select"
+import { CountryDropdown } from "@/components/onboarding/country-dropdown"
 import { Input } from "@/components/ui/input"
 import type { OnboardingDraft } from "@/lib/onboarding/types"
 import { normalizeUsername } from "@/lib/profile/validate-username"
@@ -142,16 +142,24 @@ export function StepAbout({
         )}
       </div>
 
-      <CountrySelect
-        value={draft.countryCode}
-        onChange={(countryCode) => onChange({ countryCode })}
-        required
-      />
-      {countryError ? (
-        <p className="text-sm text-destructive" role="alert">
-          {countryError}
-        </p>
-      ) : null}
+      <div className="space-y-1.5">
+        <label htmlFor="country-of-origin" className="text-sm font-medium">
+          Country of origin <span className="text-destructive">*</span>
+        </label>
+        <CountryDropdown
+          id="country-of-origin"
+          valueAlpha2={draft.countryCode}
+          onChange={(country) =>
+            onChange({ countryCode: country.alpha2.toUpperCase() })
+          }
+          placeholder="Select your country"
+        />
+        {countryError ? (
+          <p className="text-sm text-destructive" role="alert">
+            {countryError}
+          </p>
+        ) : null}
+      </div>
     </div>
   )
 }

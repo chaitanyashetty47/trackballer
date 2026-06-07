@@ -6,6 +6,10 @@ import { useState } from "react"
 import { XIcon } from "@/components/login/oauth-provider-icons"
 import { Button } from "@/components/ui/button"
 import { getOAuthRedirectUrl } from "@/lib/auth/oauth-providers"
+import {
+  buildAvatarCacheUpdate,
+  type AvatarSource,
+} from "@/lib/profile/display-avatar"
 import { createClient } from "@/lib/supabase/client"
 
 type ConnectXButtonProps = {
@@ -63,11 +67,33 @@ export function ConnectXButton({
       }
     }
 
+    const { data: existing } = await supabase
+      .from("profiles")
+      .select("avatar_source, google_avatar_url, x_avatar_url, avatar_url")
+      .eq("id", user?.id ?? "")
+      .maybeSingle()
+
+    const nextSource: AvatarSource | null =
+      existing?.avatar_source === "x"
+        ? "google"
+        : existing?.avatar_source === "google"
+          ? "google"
+          : null
+
+    const avatarCache = buildAvatarCacheUpdate({
+      avatar_source: nextSource ?? null,
+      google_avatar_url: existing?.google_avatar_url,
+      x_avatar_url: null,
+      avatar_url: existing?.avatar_url,
+    })
+
     const { error: updateError } = await supabase
       .from("profiles")
       .update({
         twitter_handle: null,
         twitter_verified_at: null,
+        x_avatar_url: null,
+        ...avatarCache,
       })
       .eq("id", user?.id ?? "")
 

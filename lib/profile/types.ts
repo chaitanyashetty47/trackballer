@@ -1,4 +1,5 @@
 import type { TeamOption } from "@/lib/onboarding/types"
+import type { AvatarSource } from "@/lib/profile/display-avatar"
 
 export type ProfileTeam = {
   id: number
@@ -12,6 +13,9 @@ export type ProfileView = {
   username: string | null
   displayName: string
   avatarUrl: string | null
+  googleAvatarUrl: string | null
+  xAvatarUrl: string | null
+  avatarSource: AvatarSource | null
   countryCode: string | null
   memberSince: string
   favouriteClub: ProfileTeam | null
