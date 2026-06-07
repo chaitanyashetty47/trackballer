@@ -1,12 +1,9 @@
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 
 import { ProfilePage } from "@/components/profile/profile-page"
 import {
   getProfileByUsername,
-  getProfileStats,
-  getProfileTeamOptions,
-  getRecentComments,
-  getRecentRatings,
+  getProfilePageData,
 } from "@/lib/profile/queries"
 import { createClient } from "@/lib/supabase/server"
 
@@ -37,26 +34,11 @@ export default async function UserProfileByUsernamePage({ params }: PageProps) {
     data: { user: sessionUser },
   } = await supabase.auth.getUser()
 
-  const userId = profile.id
-  const [stats, recentRatings, recentComments, teamOptions] = await Promise.all([
-    getProfileStats(userId),
-    getRecentRatings(userId),
-    getRecentComments(userId),
-    getProfileTeamOptions(),
-  ])
+  if (sessionUser?.id === profile.id) {
+    redirect("/profile")
+  }
 
-  const isOwner = sessionUser?.id === userId
+  const data = await getProfilePageData(profile, sessionUser?.id)
 
-  return (
-    <ProfilePage
-      data={{
-        profile,
-        stats,
-        recentRatings,
-        recentComments,
-        isOwner,
-        teamOptions,
-      }}
-    />
-  )
+  return <ProfilePage data={data} />
 }

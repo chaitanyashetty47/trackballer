@@ -103,7 +103,7 @@ export async function updateProfile(input: unknown): Promise<UpdateProfileResult
   if (existing.username) {
     revalidatePath(`/u/${existing.username}`)
   }
-  revalidatePath(`/profile/${user.id}`)
+  revalidatePath("/profile")
   revalidatePath("/")
   return { ok: true }
 }

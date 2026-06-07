@@ -4,6 +4,7 @@ import { resolveDisplayAvatar, type AvatarSource } from "@/lib/profile/display-a
 import { createClient } from "@/lib/supabase/server"
 
 import type {
+  ProfilePageData,
   ProfileStats,
   ProfileTeam,
   ProfileView,
@@ -249,4 +250,30 @@ export async function getRecentComments(userId: string): Promise<RecentCommentIt
 
 export async function getProfileTeamOptions() {
   return getOnboardingOptions()
+}
+
+export async function getProfilePageData(
+  profile: ProfileView,
+  sessionUserId: string | undefined,
+  options?: { isOwner?: boolean },
+): Promise<ProfilePageData> {
+  const userId = profile.id
+  const [stats, recentRatings, recentComments, teamOptions] = await Promise.all([
+    getProfileStats(userId),
+    getRecentRatings(userId),
+    getRecentComments(userId),
+    getProfileTeamOptions(),
+  ])
+
+  const isOwner =
+    options?.isOwner ?? (sessionUserId != null && sessionUserId === userId)
+
+  return {
+    profile,
+    stats,
+    recentRatings,
+    recentComments,
+    isOwner,
+    teamOptions,
+  }
 }

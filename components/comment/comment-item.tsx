@@ -48,7 +48,7 @@ export function CommentItem({
     comment.profile?.username ?? comment.profile?.display_name ?? "user"
   const profileHref = comment.profile?.username
     ? `/u/${comment.profile.username}`
-    : `/profile/${comment.user_id}`
+    : null
 
   function confirmDelete() {
     onDelete(comment.id)
@@ -98,12 +98,16 @@ export function CommentItem({
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Link
-              href={profileHref}
-              className="font-medium text-foreground hover:underline"
-            >
-              @{handle}
-            </Link>
+            {profileHref ? (
+              <Link
+                href={profileHref}
+                className="font-medium text-foreground hover:underline"
+              >
+                @{handle}
+              </Link>
+            ) : (
+              <span className="font-medium text-foreground">@{handle}</span>
+            )}
             {comment.profile?.favourite_club?.logo_url && (
               <Image
                 src={comment.profile.favourite_club.logo_url}

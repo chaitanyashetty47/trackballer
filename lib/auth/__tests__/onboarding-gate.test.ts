@@ -16,6 +16,7 @@ describe("isOnboardingBypassPath", () => {
   })
 
   it("blocks profile settings until onboarding completes", () => {
+    expect(isOnboardingBypassPath("/profile")).toBe(false)
     expect(isOnboardingBypassPath("/u/chai")).toBe(false)
     expect(isOnboardingBypassPath("/settings")).toBe(false)
   })

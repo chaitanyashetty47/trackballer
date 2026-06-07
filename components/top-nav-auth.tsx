@@ -37,9 +37,7 @@ export async function TopNavAuth() {
 
   const name = profile?.display_name?.trim() || "Fan"
   const avatarUrl = profile?.avatar_url
-  const profileHref = profile?.username
-    ? `/u/${profile.username}`
-    : "/onboarding"
+  const profileHref = profile?.username ? "/profile" : "/onboarding"
 
   return (
     <Link

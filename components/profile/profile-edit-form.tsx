@@ -5,6 +5,7 @@ import { useState, useTransition } from "react"
 
 import { AvatarSourcePicker } from "@/components/profile/avatar-source-picker"
 import { ConnectXButton } from "@/components/profile/connect-x-button"
+import { ProfilePublicLink } from "@/components/profile/profile-public-link"
 import { PlasticFanDialog } from "@/components/profile/plastic-fan-dialog"
 import { Button } from "@/components/ui/button"
 import { CountryDropdown } from "@/components/onboarding/country-dropdown"
@@ -110,10 +111,13 @@ export function ProfileEditForm({ profile, teamOptions }: ProfileEditFormProps) 
 
       <div className="space-y-4">
         {profile.username ? (
-          <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium">Username</span>
-            <p className="text-sm text-muted-foreground">@{profile.username}</p>
-          </div>
+          <>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-sm font-medium">Username</span>
+              <p className="text-sm text-muted-foreground">@{profile.username}</p>
+            </div>
+            <ProfilePublicLink username={profile.username} />
+          </>
         ) : null}
 
         <div className="flex flex-col gap-1.5">
