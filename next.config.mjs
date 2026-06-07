@@ -7,6 +7,11 @@ const nextConfig = {
         hostname: "media.api-sports.io",
         pathname: "/football/**",
       },
+      {
+        protocol: "https",
+        hostname: "images.fotmob.com",
+        pathname: "/image_resources/**",
+      },
     ],
   },
 }
