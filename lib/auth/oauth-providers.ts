@@ -1,6 +1,6 @@
 import type { Provider } from "@supabase/supabase-js"
 
-export type OAuthProviderId = "google" | "facebook" | "apple"
+export type OAuthProviderId = "google" | "x" | "facebook" | "apple"
 
 export type OAuthProviderConfig = {
   id: OAuthProviderId
@@ -10,12 +10,18 @@ export type OAuthProviderConfig = {
   enabled: boolean
 }
 
-/** Google is configured in Supabase; FB/Apple UI only until dashboard setup. */
+/** Google + X when configured in Supabase; FB/Apple UI only until dashboard setup. */
 export const oauthProviders: OAuthProviderConfig[] = [
   {
     id: "google",
     supabaseProvider: "google",
     label: "Continue with Google",
+    enabled: true,
+  },
+  {
+    id: "x",
+    supabaseProvider: "x",
+    label: "Continue with X",
     enabled: true,
   },
   {

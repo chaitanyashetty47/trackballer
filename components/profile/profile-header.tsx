@@ -1,4 +1,5 @@
 import { TeamFlag } from "@/components/team-flag"
+import { getCountryLabel } from "@/lib/countries/iso-countries"
 import type { ProfileView } from "@/lib/profile/types"
 import { socialProfileUrl } from "@/lib/profile/validate-social-handles"
 
@@ -16,19 +17,28 @@ function formatMemberSince(iso: string): string {
 function SocialLink({
   label,
   href,
+  verified,
 }: {
   label: string
   href: string
+  verified?: boolean
 }) {
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-sm text-primary underline-offset-4 hover:underline"
-    >
-      {label}
-    </a>
+    <span className="inline-flex items-center gap-1.5">
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-sm text-primary underline-offset-4 hover:underline"
+      >
+        {label}
+      </a>
+      {verified ? (
+        <span className="text-xs text-emerald-600 dark:text-emerald-400">
+          Verified
+        </span>
+      ) : null}
+    </span>
   )
 }
 
@@ -41,29 +51,20 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
     Boolean,
   ) as NonNullable<ProfileView["favouriteClub"]>[]
 
-  const socials: { label: string; href: string }[] = []
-  if (profile.twitterHandle) {
+  const countryLabel = getCountryLabel(profile.countryCode)
+
+  const socials: { label: string; href: string; verified?: boolean }[] = []
+  if (profile.twitterHandle && profile.twitterVerifiedAt) {
     socials.push({
       label: `@${profile.twitterHandle}`,
       href: socialProfileUrl("twitter", profile.twitterHandle),
+      verified: true,
     })
   }
   if (profile.instagramHandle) {
     socials.push({
       label: `@${profile.instagramHandle}`,
       href: socialProfileUrl("instagram", profile.instagramHandle),
-    })
-  }
-  if (profile.tiktokHandle) {
-    socials.push({
-      label: `@${profile.tiktokHandle}`,
-      href: socialProfileUrl("tiktok", profile.tiktokHandle),
-    })
-  }
-  if (profile.redditHandle) {
-    socials.push({
-      label: `u/${profile.redditHandle}`,
-      href: socialProfileUrl("reddit", profile.redditHandle),
     })
   }
 
@@ -87,6 +88,9 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
 
       <div className="mt-4 min-w-0 sm:mt-0">
         <h1 className="h-display text-2xl">{profile.displayName}</h1>
+        {profile.username ? (
+          <p className="body-sm text-muted-foreground">@{profile.username}</p>
+        ) : null}
 
         {teams.length > 0 ? (
           <div className="mt-2 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
@@ -109,8 +113,8 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
           </div>
         ) : null}
 
-        {profile.location ? (
-          <p className="body-sm mt-1 text-muted-foreground">{profile.location}</p>
+        {countryLabel ? (
+          <p className="body-sm mt-1 text-muted-foreground">{countryLabel}</p>
         ) : null}
 
         <p className="body-sm mt-1 text-muted-foreground">
@@ -120,7 +124,12 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
         {socials.length > 0 ? (
           <div className="mt-3 flex flex-wrap justify-center gap-3 sm:justify-start">
             {socials.map((s) => (
-              <SocialLink key={s.href} label={s.label} href={s.href} />
+              <SocialLink
+                key={s.href}
+                label={s.label}
+                href={s.href}
+                verified={s.verified}
+              />
             ))}
           </div>
         ) : null}

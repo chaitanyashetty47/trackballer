@@ -14,9 +14,14 @@ export async function getPostOAuthRedirectPath(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("onboarding_completed_at")
+    .select("onboarding_completed_at, username, country_code")
     .eq("id", user.id)
     .maybeSingle()
 
-  return profile?.onboarding_completed_at ? "/" : "/onboarding"
+  const onboardingDone =
+    profile?.onboarding_completed_at &&
+    profile.username &&
+    profile.country_code
+
+  return onboardingDone ? "/" : "/onboarding"
 }

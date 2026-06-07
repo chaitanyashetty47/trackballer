@@ -44,7 +44,11 @@ export function CommentItem({
   const isDeletedStub = comment.is_deleted
   const isOwner = currentUserId === comment.user_id
   const timeSince = getTimeSince(comment.created_at)
-  const displayName = comment.profile?.display_name ?? "user"
+  const handle =
+    comment.profile?.username ?? comment.profile?.display_name ?? "user"
+  const profileHref = comment.profile?.username
+    ? `/u/${comment.profile.username}`
+    : `/profile/${comment.user_id}`
 
   function confirmDelete() {
     onDelete(comment.id)
@@ -95,10 +99,10 @@ export function CommentItem({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Link
-              href={`/profile/${comment.user_id}`}
+              href={profileHref}
               className="font-medium text-foreground hover:underline"
             >
-              @{displayName}
+              @{handle}
             </Link>
             {comment.profile?.favourite_club?.logo_url && (
               <Image

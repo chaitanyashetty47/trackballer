@@ -3,26 +3,27 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
-import { socialHandlesSchema } from "@/lib/profile/validate-social-handles"
+import { normalizeSocialHandle } from "@/lib/profile/validate-social-handles"
+import { countryCodeSchema } from "@/lib/profile/validate-username"
 import { createClient } from "@/lib/supabase/server"
 
-const updateProfileSchema = z
-  .object({
-    displayName: z.string().trim().min(1, "Display name is required.").max(80),
-    location: z
-      .string()
-      .nullable()
-      .optional()
-      .transform((v) => {
-        const t = v?.trim() ?? ""
-        return t.length > 0 ? t : null
-      }),
-    avatarUrl: z.string().max(2000).optional().default(""),
-    favouriteClubId: z.number().int().positive().nullable(),
-    favouriteNationalTeamId: z.number().int().positive().nullable(),
-    plasticFanConfirmed: z.boolean().optional(),
-  })
-  .merge(socialHandlesSchema)
+const updateProfileSchema = z.object({
+  displayName: z.string().trim().min(1, "Display name is required.").max(80),
+  countryCode: countryCodeSchema,
+  favouriteClubId: z.number().int().positive().nullable(),
+  favouriteNationalTeamId: z.number().int().positive().nullable(),
+  plasticFanConfirmed: z.boolean().optional(),
+  instagramHandle: z
+    .union([z.string(), z.null(), z.undefined()])
+    .transform((val, ctx) => {
+      const result = normalizeSocialHandle("instagram", val ?? null)
+      if (!result.ok) {
+        ctx.addIssue({ code: "custom", message: result.error })
+        return z.NEVER
+      }
+      return result.handle
+    }),
+})
 
 export type UpdateProfileResult = { ok: true } | { ok: false; error: string }
 
@@ -44,23 +45,9 @@ export async function updateProfile(input: unknown): Promise<UpdateProfileResult
 
   const data = parsed.data
 
-  const photoRaw = data.avatarUrl.trim()
-  let avatarUrl: string | null = null
-  if (photoRaw) {
-    try {
-      const url = new URL(photoRaw)
-      if (url.protocol !== "https:") {
-        return { ok: false, error: "Avatar URL must use https." }
-      }
-      avatarUrl = photoRaw
-    } catch {
-      return { ok: false, error: "Avatar URL must be a valid https link or empty." }
-    }
-  }
-
   const { data: existing, error: fetchError } = await supabase
     .from("profiles")
-    .select("favourite_club_id, onboarding_completed_at")
+    .select("favourite_club_id, onboarding_completed_at, username")
     .eq("id", user.id)
     .single()
 
@@ -87,14 +74,10 @@ export async function updateProfile(input: unknown): Promise<UpdateProfileResult
     .from("profiles")
     .update({
       display_name: data.displayName,
-      location: data.location,
-      avatar_url: avatarUrl,
+      country_code: data.countryCode,
       favourite_club_id: data.favouriteClubId,
       favourite_national_team_id: data.favouriteNationalTeamId,
-      twitter_handle: data.twitterHandle,
       instagram_handle: data.instagramHandle,
-      tiktok_handle: data.tiktokHandle,
-      reddit_handle: data.redditHandle,
     })
     .eq("id", user.id)
 
@@ -102,6 +85,9 @@ export async function updateProfile(input: unknown): Promise<UpdateProfileResult
     return { ok: false, error: "Could not save profile. Try again." }
   }
 
+  if (existing.username) {
+    revalidatePath(`/u/${existing.username}`)
+  }
   revalidatePath(`/profile/${user.id}`)
   revalidatePath("/")
   return { ok: true }

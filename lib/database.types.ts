@@ -941,6 +941,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          country_code: string | null
           created_at: string
           date_of_birth: string | null
           display_name: string
@@ -956,10 +957,13 @@ export type Database = {
           reddit_handle: string | null
           tiktok_handle: string | null
           twitter_handle: string | null
+          twitter_verified_at: string | null
           updated_at: string
+          username: string | null
         }
         Insert: {
           avatar_url?: string | null
+          country_code?: string | null
           created_at?: string
           date_of_birth?: string | null
           display_name: string
@@ -975,10 +979,13 @@ export type Database = {
           reddit_handle?: string | null
           tiktok_handle?: string | null
           twitter_handle?: string | null
+          twitter_verified_at?: string | null
           updated_at?: string
+          username?: string | null
         }
         Update: {
           avatar_url?: string | null
+          country_code?: string | null
           created_at?: string
           date_of_birth?: string | null
           display_name?: string
@@ -994,7 +1001,9 @@ export type Database = {
           reddit_handle?: string | null
           tiktok_handle?: string | null
           twitter_handle?: string | null
+          twitter_verified_at?: string | null
           updated_at?: string
+          username?: string | null
         }
         Relationships: [
           {

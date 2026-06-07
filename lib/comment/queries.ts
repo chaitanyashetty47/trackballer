@@ -10,6 +10,7 @@ import type { CommentWithProfile } from "./types"
 
 const PROFILE_SELECT = `
   id,
+  username,
   display_name,
   avatar_url,
   favourite_club:teams!profiles_favourite_club_id_fkey(id, name, logo_url)

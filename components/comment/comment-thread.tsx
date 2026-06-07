@@ -53,6 +53,7 @@ function buildPendingComment(
     target_type: targetType,
     profile: {
       id: currentUserId,
+      username: null,
       display_name: "You",
       avatar_url: null,
       favourite_club: null,

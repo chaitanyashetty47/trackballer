@@ -9,16 +9,16 @@ export type ProfileTeam = {
 
 export type ProfileView = {
   id: string
+  username: string | null
   displayName: string
   avatarUrl: string | null
-  location: string | null
+  countryCode: string | null
   memberSince: string
   favouriteClub: ProfileTeam | null
   favouriteNationalTeam: ProfileTeam | null
   twitterHandle: string | null
+  twitterVerifiedAt: string | null
   instagramHandle: string | null
-  tiktokHandle: string | null
-  redditHandle: string | null
 }
 
 export type ProfileStats = {

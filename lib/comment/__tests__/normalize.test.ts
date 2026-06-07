@@ -27,6 +27,7 @@ function rawComment(
     target_type: "player",
     profile: {
       id: "user-a",
+      username: "fan1",
       display_name: "fan1",
       avatar_url: null,
       favourite_club: null,
