@@ -84,7 +84,8 @@ async function fetchBrowseRows(
       allRows.push(...(data ?? []))
     }
 
-    return { rows: allRows, total: candidateIds.length }
+    // Count filtered rows, not raw name matches — age/club/position filters apply here too.
+    return { rows: allRows, total: allRows.length }
   }
 
   let from = 0
@@ -127,8 +128,8 @@ export const browsePlayers = cache(
       }
     }
 
-    const { rows, total } = await fetchBrowseRows(supabase, filters, candidateIds)
-    let sorted = mapAndSortPlayerRows(rows)
+    const { rows } = await fetchBrowseRows(supabase, filters, candidateIds)
+    let sorted = mapAndSortPlayerRows(rows, filters.sort)
 
     if (filters.minRating != null) {
       sorted = sorted.filter((player) => player.displayScore >= filters.minRating!)
@@ -138,7 +139,7 @@ export const browsePlayers = cache(
 
     return {
       players: sorted.slice(from, from + BROWSE_PAGE_SIZE),
-      total: filters.minRating != null ? sorted.length : total,
+      total: sorted.length,
       page: filters.page,
       pageSize: BROWSE_PAGE_SIZE,
     }

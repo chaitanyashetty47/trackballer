@@ -47,8 +47,14 @@ describe("search query helpers", () => {
     expect(filters.ageMin).toBe(18)
     expect(filters.ageMax).toBe(35)
     expect(filters.minRating).toBe(7.5)
+    expect(filters.sort).toBe("rating-desc")
     expect(filters.page).toBe(2)
     expect(filters.leagueSlug).toBe("world-cup")
+  })
+
+  it("parseBrowseFilters reads sort param", () => {
+    expect(parseBrowseFilters({ sort: "rating-asc" }).sort).toBe("rating-asc")
+    expect(parseBrowseFilters({ sort: "invalid" }).sort).toBe("rating-desc")
   })
 
   it("browseOffset uses page size", () => {
@@ -66,12 +72,31 @@ describe("search query helpers", () => {
       ageMin: null,
       ageMax: null,
       minRating: 6,
+      sort: "rating-asc",
       page: 1,
     })
 
     expect(href).toContain("q=kane")
     expect(href).toContain("nationalTeamId=10")
     expect(href).toContain("minRating=6")
+    expect(href).toContain("sort=rating-asc")
     expect(href).not.toContain("league=")
+  })
+
+  it("buildPlayersBrowseHref omits default sort", () => {
+    const href = buildPlayersBrowseHref({
+      q: null,
+      nationalTeamId: null,
+      position: null,
+      clubId: null,
+      leagueSlug: "world-cup",
+      ageMin: null,
+      ageMax: null,
+      minRating: null,
+      sort: "rating-desc",
+      page: 1,
+    })
+
+    expect(href).toBe("/players")
   })
 })

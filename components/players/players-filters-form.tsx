@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { Search } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { FormEvent, useEffect, useState } from "react"
 
@@ -16,8 +17,9 @@ import {
 import { HydrationGate } from "@/components/hydration-gate"
 import { SearchCombobox } from "@/components/ui/search-combobox"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { buildPlayersBrowseHref } from "@/lib/search/query"
+import { buildPlayersBrowseHref, normalizeSearchQuery } from "@/lib/search/query"
 import {
   nationalTeamsToComboboxOptions,
   teamsToComboboxOptions,
@@ -57,6 +59,7 @@ export function PlayersFiltersForm({
   const [nationalTeamId, setNationalTeamId] = useState<string | null>(
     filters.nationalTeamId != null ? String(filters.nationalTeamId) : null,
   )
+  const [query, setQuery] = useState(filters.q ?? "")
   const [clubId, setClubId] = useState<string | null>(
     filters.clubId != null ? String(filters.clubId) : null,
   )
@@ -70,6 +73,7 @@ export function PlayersFiltersForm({
   )
 
   useEffect(() => {
+    setQuery(filters.q ?? "")
     setNationalTeamId(
       filters.nationalTeamId != null ? String(filters.nationalTeamId) : null,
     )
@@ -83,7 +87,7 @@ export function PlayersFiltersForm({
     event?.preventDefault()
 
     const next: BrowseFilters = {
-      q: filters.q,
+      q: normalizeSearchQuery(query),
       nationalTeamId:
         nationalTeamId != null ? Number.parseInt(nationalTeamId, 10) : null,
       position: position || null,
@@ -92,6 +96,7 @@ export function PlayersFiltersForm({
       ageMin: isFullAgeRange(ageRange) ? null : ageRange[0],
       ageMax: isFullAgeRange(ageRange) ? null : ageRange[1],
       minRating: isNoMinRating(ratingMin) ? null : ratingMin,
+      sort: filters.sort,
       page: 1,
     }
 
@@ -143,12 +148,24 @@ export function PlayersFiltersForm({
         </div>
       ) : null}
 
-      {/* <div className="space-y-1.5">
-        <Label htmlFor={id("league")}>League</Label>
-        <select id={id("league")} name="league" defaultValue="world-cup" className={selectClass} disabled>
-          <option value="world-cup">{options.leagueLabel}</option>
-        </select>
-      </div> */}
+      <div className="space-y-1.5">
+        <Label htmlFor={id("search")}>Name</Label>
+        <div className="relative">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
+          <Input
+            id={id("search")}
+            name="q"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search by name…"
+            className="pl-9"
+            aria-label="Search players by name"
+          />
+        </div>
+      </div>
 
       <SearchCombobox
         options={nationalTeamOptions}
