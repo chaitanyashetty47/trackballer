@@ -1,12 +1,21 @@
 import { cache } from "react"
 
 import { FIXTURE_TEAM_SELECT, mapFixtureRow } from "@/lib/catalog/fixtures"
+import { buildCompetitionLabel } from "@/lib/match/competition-label"
 import { buildFormationRows, formationLabel } from "@/lib/match/formation"
 import { parseGridSlot } from "@/lib/match/lineup-position"
 import { buildGoalAssistCountsMap } from "@/lib/match/goal-assist-counts"
+import { buildMatchGoalScorers } from "@/lib/match/match-goals"
+import { buildPenaltyShootout } from "@/lib/match/penalty-shootout"
 import { buildSubOnInfoMap, type SubOnInfo } from "@/lib/match/sub-on-minutes"
 import type { MatchCoach, MatchDetail, MatchLineupPlayer } from "@/lib/match/types"
 import { createClient } from "@/lib/supabase/server"
+
+const MATCH_FIXTURE_SELECT = `${FIXTURE_TEAM_SELECT},
+  seasons!fixtures_season_id_fkey (
+    year,
+    leagues ( name )
+  )`
 
 type LineupRow = {
   player_id: number
@@ -42,13 +51,23 @@ type CoachRow = {
   photo_url: string | null
 }
 
+type EventRow = {
+  player_id: number | null
+  team_id: number | null
+  assist_player_id: number | null
+  minute: number
+  extra_minute: number | null
+  type: string
+  detail: string | null
+}
+
 export const getMatchDetail = cache(
   async (fixtureId: number): Promise<MatchDetail | null> => {
     const supabase = await createClient()
 
     const { data: fixtureRow, error: fixtureError } = await supabase
       .from("fixtures")
-      .select(FIXTURE_TEAM_SELECT)
+      .select(MATCH_FIXTURE_SELECT)
       .eq("id", fixtureId)
       .maybeSingle()
 
@@ -88,7 +107,7 @@ export const getMatchDetail = cache(
         .eq("fixture_id", fixtureId),
       supabase
         .from("fixture_events")
-        .select("player_id, assist_player_id, minute, extra_minute, type, detail")
+        .select("player_id, team_id, assist_player_id, minute, extra_minute, type, detail")
         .eq("fixture_id", fixtureId),
       loadUserRatings(supabase, fixtureId),
     ])
@@ -101,6 +120,20 @@ export const getMatchDetail = cache(
       }
     }
 
+    const events = (eventRows ?? []) as EventRow[]
+    const playerNames = await enrichPlayerNames(supabase, playerNameById, events)
+    const { leagueName, seasonYear } = extractSeasonMeta(fixtureRow)
+    const competitionLabel = buildCompetitionLabel(
+      leagueName,
+      fixture.round_name,
+      seasonYear,
+    )
+    const goalScorers = buildMatchGoalScorers(events, fixture.home_team_id, playerNames)
+    const penaltyShootout =
+      fixture.status_short === "PEN"
+        ? buildPenaltyShootout(events, fixture.home_team_id, playerNames)
+        : null
+
     const appearanceByPlayer = new Map<number, AppearanceRow>()
     for (const row of appearanceRows ?? []) {
       appearanceByPlayer.set(row.player_id, row)
@@ -111,8 +144,8 @@ export const getMatchDetail = cache(
       aggregateByPlayer.set(row.player_id, row)
     }
 
-    const subOnInfoByPlayer = buildSubOnInfoMap(eventRows ?? [])
-    const goalAssistByPlayer = buildGoalAssistCountsMap(eventRows ?? [])
+    const subOnInfoByPlayer = buildSubOnInfoMap(events)
+    const goalAssistByPlayer = buildGoalAssistCountsMap(events)
 
     const coaches = mapCoaches(
       coachRows ?? [],
@@ -193,6 +226,9 @@ export const getMatchDetail = cache(
 
     return {
       fixture,
+      competitionLabel,
+      goalScorers,
+      penaltyShootout,
       ratingsUnlocked: fixture.ratings_unlocked_at != null,
       hasLineups: starters.length > 0,
       starters,
@@ -205,6 +241,62 @@ export const getMatchDetail = cache(
     }
   },
 )
+
+function extractSeasonMeta(fixtureRow: unknown): {
+  leagueName: string | null
+  seasonYear: number | null
+} {
+  if (!fixtureRow || typeof fixtureRow !== "object") {
+    return { leagueName: null, seasonYear: null }
+  }
+
+  const seasons = (fixtureRow as Record<string, unknown>).seasons
+  if (!seasons || typeof seasons !== "object") {
+    return { leagueName: null, seasonYear: null }
+  }
+
+  const seasonObj = seasons as { year?: number; leagues?: unknown }
+  const seasonYear = typeof seasonObj.year === "number" ? seasonObj.year : null
+
+  let leagueName: string | null = null
+  const leagues = seasonObj.leagues
+  if (leagues && typeof leagues === "object") {
+    if (Array.isArray(leagues)) {
+      leagueName = (leagues[0] as { name?: string } | undefined)?.name ?? null
+    } else {
+      leagueName = (leagues as { name?: string }).name ?? null
+    }
+  }
+
+  return { leagueName, seasonYear }
+}
+
+async function enrichPlayerNames(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  existing: Map<number, string>,
+  events: EventRow[],
+): Promise<Map<number, string>> {
+  const missing = new Set<number>()
+  for (const event of events) {
+    if (event.player_id != null && !existing.has(event.player_id)) {
+      missing.add(event.player_id)
+    }
+  }
+
+  if (missing.size === 0) return existing
+
+  const merged = new Map(existing)
+  const { data } = await supabase
+    .from("players")
+    .select("id, name")
+    .in("id", [...missing])
+
+  for (const row of data ?? []) {
+    merged.set(row.id, row.name)
+  }
+
+  return merged
+}
 
 function mapCoaches(
   rows: CoachRow[],

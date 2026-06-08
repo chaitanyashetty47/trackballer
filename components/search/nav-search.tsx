@@ -12,19 +12,29 @@ import { useDebounce } from "@/hooks/use-debounce"
 import type { PlayerListItem } from "@/lib/search/types"
 import { cn } from "@/lib/utils"
 
-function NavSearchFallback() {
+type NavSearchVariant = "header" | "menu"
+
+type NavSearchProps = {
+  variant?: NavSearchVariant
+  onResultSelect?: () => void
+}
+
+function NavSearchFallback({ variant }: { variant: NavSearchVariant }) {
+  if (variant === "menu") {
+    return (
+      <div className="h-9 w-full rounded-lg border border-border bg-muted/30" aria-hidden />
+    )
+  }
+
   return (
-    <>
-      <div
-        className="hidden h-8 min-w-0 max-w-[280px] flex-1 rounded-lg border border-border bg-muted/30 md:block"
-        aria-hidden
-      />
-      <div className="size-9 shrink-0 rounded-md bg-muted/30 md:hidden" aria-hidden />
-    </>
+    <div
+      className="h-8 w-full max-w-[280px] rounded-lg border border-border bg-muted/30"
+      aria-hidden
+    />
   )
 }
 
-export function NavSearch() {
+export function NavSearch({ variant = "header", onResultSelect }: NavSearchProps) {
   const router = useRouter()
   const anchorRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -35,6 +45,7 @@ export function NavSearch() {
 
   const debouncedQuery = useDebounce(query, 300)
   const dropdownOpen = query.trim().length >= 1
+  const isMenu = variant === "menu"
 
   useEffect(() => {
     if (!dropdownOpen) return
@@ -96,6 +107,7 @@ export function NavSearch() {
   function handleResultClick(playerId: number) {
     setQuery("")
     setResults([])
+    onResultSelect?.()
     router.push(`/player/${playerId}`)
   }
 
@@ -105,7 +117,7 @@ export function NavSearch() {
   const showResults = results.length > 0
 
   return (
-    <HydrationGate fallback={<NavSearchFallback />}>
+    <HydrationGate fallback={<NavSearchFallback variant={variant} />}>
       <PopoverPrimitive.Root
         open={dropdownOpen}
         onOpenChange={handleOpenChange}
@@ -113,7 +125,10 @@ export function NavSearch() {
       >
         <div
           ref={anchorRef}
-          className="relative hidden min-w-0 max-w-[280px] flex-1 md:block"
+          className={cn(
+            "relative min-w-0",
+            isMenu ? "w-full" : "w-full max-w-[280px]",
+          )}
         >
           <Search
             className="pointer-events-none absolute left-2.5 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground"
@@ -124,7 +139,7 @@ export function NavSearch() {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search players…"
-            className="h-8 w-full pl-8"
+            className={cn("w-full pl-8", isMenu ? "h-9" : "h-8")}
             aria-label="Search players"
             aria-expanded={dropdownOpen}
             aria-autocomplete="list"
@@ -137,14 +152,15 @@ export function NavSearch() {
             side="bottom"
             align="start"
             sideOffset={4}
-            className="isolate z-50"
+            className="isolate z-60"
           >
             <PopoverPrimitive.Popup
               ref={popupRef}
               initialFocus={false}
               finalFocus={inputRef}
               className={cn(
-                "z-50 w-[var(--anchor-width)] max-w-[280px] rounded-lg bg-popover p-0 text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-hidden",
+                "z-60 w-(--anchor-width) rounded-lg bg-popover p-0 text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-hidden",
+                !isMenu && "max-w-[280px]",
               )}
             >
               {showSpinner ? (
@@ -183,16 +199,6 @@ export function NavSearch() {
           </PopoverPrimitive.Positioner>
         </PopoverPrimitive.Portal>
       </PopoverPrimitive.Root>
-
-      <a
-        href="/search"
-        className={cn(
-          "flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground md:hidden",
-        )}
-        aria-label="Search players"
-      >
-        <Search className="size-[18px]" strokeWidth={2} />
-      </a>
     </HydrationGate>
   )
 }

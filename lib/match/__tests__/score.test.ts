@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest"
 
 import {
   formatMatchKickoffDateTime,
+  formatMatchKickoffLocal,
   formatMatchScore,
   type MatchScoreFixture,
 } from "@/lib/match/score"
@@ -50,6 +51,20 @@ describe("formatMatchScore", () => {
         minute: "2-digit",
         hour12: false,
         timeZone: "UTC",
+      }).format(new Date("2022-12-18T20:30:00.000Z")),
+    )
+  })
+
+  it("formats kickoff in the runtime local zone for match hero", () => {
+    expect(formatMatchKickoffLocal("2022-12-18T20:30:00.000Z")).toBe(
+      new Intl.DateTimeFormat("en-GB", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
       }).format(new Date("2022-12-18T20:30:00.000Z")),
     )
   })

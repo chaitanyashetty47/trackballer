@@ -4,28 +4,15 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 import { NavSearch } from "@/components/search/nav-search"
+import { topNavLinks } from "@/components/top-nav-links"
+import { TopNavMobileMenu } from "@/components/top-nav-mobile-menu"
 import { cn } from "@/lib/utils"
-
-const tabs = [
-  { href: "/", label: "Home", match: (path: string) => path === "/" },
-  { href: "/players", label: "Players", match: (path: string) => path.startsWith("/players") },
-  {
-    href: "/world-cup",
-    label: "World Cup",
-    match: (path: string) => path.startsWith("/world-cup"),
-  },
-  {
-    href: "/league/premier-league",
-    label: "Leagues",
-    match: (path: string) => path.startsWith("/league"),
-  },
-] as const
 
 type TopNavChromeProps = {
   showAdminLink?: boolean
 }
 
-/** Client: brand, tabs, and search (pathname-aware). */
+/** Client: brand, tabs, search (desktop), and mobile menu. */
 export function TopNavChrome({ showAdminLink = false }: TopNavChromeProps) {
   const pathname = usePathname()
   const adminActive = pathname === "/admin" || pathname.startsWith("/admin/")
@@ -40,10 +27,10 @@ export function TopNavChrome({ showAdminLink = false }: TopNavChromeProps) {
       </Link>
 
       <nav
-        className="ml-2 flex min-w-0 flex-1 gap-0.5 overflow-x-auto"
+        className="ml-2 hidden min-w-0 flex-1 gap-0.5 overflow-x-auto md:flex"
         aria-label="Main"
       >
-        {tabs.map((tab) => {
+        {topNavLinks.map((tab) => {
           const active = tab.match(pathname)
           return (
             <Link
@@ -65,7 +52,7 @@ export function TopNavChrome({ showAdminLink = false }: TopNavChromeProps) {
         <Link
           href="/admin"
           className={cn(
-            "relative shrink-0 px-2 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground",
+            "relative hidden shrink-0 px-2 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground md:block",
             adminActive &&
               "font-semibold text-foreground after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-primary",
           )}
@@ -74,7 +61,11 @@ export function TopNavChrome({ showAdminLink = false }: TopNavChromeProps) {
         </Link>
       ) : null}
 
-      <NavSearch />
+      <div className="hidden min-w-0 max-w-[280px] flex-1 md:block">
+        <NavSearch variant="header" />
+      </div>
+
+      <TopNavMobileMenu showAdminLink={showAdminLink} className="ml-auto md:hidden" />
     </>
   )
 }

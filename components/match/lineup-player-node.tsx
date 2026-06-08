@@ -9,40 +9,48 @@ import { cn } from "@/lib/utils"
 const ASSIST_ICON = "/american-football-black-shoe-svgrepo-com.svg"
 const GOAL_ICON = "/football-svgrepo-com.svg"
 
-function lastName(name: string): string {
+function shortName(name: string): string {
   const parts = name.trim().split(/\s+/)
-  return parts[parts.length - 1] ?? name
+  if (parts.length <= 1) return name
+  const last = parts[parts.length - 1] ?? name
+  const first = parts[0]
+  if (!first) return last
+  return `${first[0]}. ${last}`
 }
 
-type LineupPlayerPuckProps = {
+type LineupPlayerNodeProps = {
   player: MatchLineupPlayer
   locked?: boolean
   onClick?: (player: MatchLineupPlayer) => void
   avatarSize?: "md" | "lg"
+  className?: string
 }
 
-export function LineupPlayerPuck({
+export function LineupPlayerNode({
   player,
   locked = false,
   onClick,
   avatarSize = "lg",
-}: LineupPlayerPuckProps) {
+  className,
+}: LineupPlayerNodeProps) {
   return (
     <button
       type="button"
       disabled={locked}
       onClick={() => onClick?.(player)}
       className={cn(
-        "flex w-full max-w-[5.5rem] flex-col items-center gap-1 px-0.5 text-center",
+        "flex w-full min-w-0 flex-col items-center px-0.5 text-center",
         locked ? "cursor-default" : "cursor-pointer hover:opacity-90",
+        className,
       )}
     >
-      <span className="relative inline-flex shrink-0 px-2.5">
+      <span className="relative inline-flex shrink-0">
         <MatchEventBadge
           iconSrc={ASSIST_ICON}
           label="assist"
           count={player.assistCount}
           side="left"
+          layout="corner"
         />
         <PlayerAvatar
           name={player.name}
@@ -56,20 +64,21 @@ export function LineupPlayerPuck({
           label="goal"
           count={player.goalCount}
           side="right"
-        />
-        <RatingChip
-          value={player.communityAvg}
-          size="sm"
-          className="absolute bottom-full left-1/2 z-10 mb-0.5 min-w-[1.75rem] -translate-x-1/2 border-background shadow-sm"
+          layout="corner"
         />
       </span>
-      <span className="max-w-full truncate text-[11px] font-semibold leading-tight text-foreground">
+      <RatingChip
+        value={player.communityAvg}
+        size="sm"
+        className="mt-0.5 z-10 min-w-[1.5rem] shrink-0 border-background px-1 py-0 text-[10px] shadow-sm"
+      />
+      <span className="mt-0.5 max-w-full truncate pt-0.5 text-[11px] font-semibold leading-tight text-foreground">
         {player.shirtNumber != null && (
           <span className="font-mono tabular-nums text-muted-foreground">
             {player.shirtNumber}{" "}
           </span>
         )}
-        {lastName(player.name)}
+        {shortName(player.name)}
       </span>
     </button>
   )
