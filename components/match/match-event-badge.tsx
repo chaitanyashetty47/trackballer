@@ -7,16 +7,21 @@ type MatchEventBadgeProps = {
   label: string
   count: number
   side: "left" | "right"
+  /** Pitch corners: icon stays put; 2+ count grows away from the face. */
+  layout?: "default" | "corner"
+  className?: string
 }
 
 function EventBadgePill({
   iconSrc,
   label,
   count,
+  expandFrom,
 }: {
   iconSrc: string
   label: string
   count: number
+  expandFrom?: "left" | "right"
 }) {
   const showCount = count >= 2
 
@@ -25,6 +30,7 @@ function EventBadgePill({
       className={cn(
         "flex items-center rounded-full border border-border bg-card shadow-sm",
         showCount ? "gap-0.5 py-0.5 pl-0.5 pr-1" : "size-5 justify-center",
+        expandFrom === "left" && showCount && "flex-row-reverse pl-1 pr-0.5",
       )}
       aria-label={`${count} ${label}${count === 1 ? "" : "s"}`}
     >
@@ -52,17 +58,33 @@ export function MatchEventBadge({
   label,
   count,
   side,
+  layout = "default",
+  className,
 }: MatchEventBadgeProps) {
   if (count < 1) return null
+
+  const cornerPosition =
+    layout === "corner"
+      ? side === "right"
+        ? "bottom-auto top-0.5 left-[calc(100%-6px)]"
+        : "bottom-auto top-0.5 right-[calc(100%-6px)]"
+      : null
 
   return (
     <span
       className={cn(
-        "pointer-events-none absolute bottom-0 z-20",
-        side === "left" ? "-left-1" : "-right-1",
+        "pointer-events-none absolute z-20",
+        cornerPosition ??
+          cn("bottom-0", side === "left" ? "-left-1" : "-right-1"),
+        className,
       )}
     >
-      <EventBadgePill iconSrc={iconSrc} label={label} count={count} />
+      <EventBadgePill
+        iconSrc={iconSrc}
+        label={label}
+        count={count}
+        expandFrom={layout === "corner" ? side : undefined}
+      />
     </span>
   )
 }

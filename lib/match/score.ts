@@ -43,6 +43,16 @@ const KICKOFF_LOCALE = "en-GB"
 /** Same zone on server and browser — avoids hydration mismatch from OS defaults. */
 const KICKOFF_TIME_ZONE = "UTC"
 
+const KICKOFF_DATETIME_OPTIONS: Intl.DateTimeFormatOptions = {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+}
+
 function formatKickoffTime(iso: string): string {
   return new Intl.DateTimeFormat(KICKOFF_LOCALE, {
     hour: "numeric",
@@ -52,16 +62,17 @@ function formatKickoffTime(iso: string): string {
   }).format(new Date(iso))
 }
 
-/** Full kickoff line for match header (date + time). */
+/** Viewer-local kickoff line — use in the browser (e.g. match hero). */
+export function formatMatchKickoffLocal(iso: string): string {
+  return new Intl.DateTimeFormat(KICKOFF_LOCALE, KICKOFF_DATETIME_OPTIONS).format(
+    new Date(iso),
+  )
+}
+
+/** UTC kickoff line — stable for server render and compact list rows. */
 export function formatMatchKickoffDateTime(iso: string): string {
   return new Intl.DateTimeFormat(KICKOFF_LOCALE, {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
+    ...KICKOFF_DATETIME_OPTIONS,
     timeZone: KICKOFF_TIME_ZONE,
   }).format(new Date(iso))
 }

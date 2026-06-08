@@ -1,19 +1,13 @@
 "use client"
 
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useState, useTransition } from "react"
 
-import {
-  MatchSubstitutesSection,
-  MatchUnusedBenchSection,
-} from "@/components/match/match-bench-sections"
-import { LineupPitch } from "@/components/match/lineup-pitch"
-import { CommentThread } from "@/components/comment/comment-thread"
-import { RatingSheet } from "@/components/rating/rating-sheet"
-import { TeamFlag } from "@/components/team-flag"
-import { Button } from "@/components/ui/button"
-import { formatMatchKickoffDateTime, formatMatchScore } from "@/lib/match/score"
+import { MatchHero } from "@/components/match/match-hero"
+import { MatchPageTabs } from "@/components/match/match-page-tabs"
+import { PenaltyShootoutSection } from "@/components/match/penalty-shootout-section"
+import { MatchRatingUI } from "@/components/rating/match-rating-ui"
+import { formatMatchHeroScore } from "@/lib/match/hero-score"
 import type { MatchDetail, MatchLineupPlayer } from "@/lib/match/types"
 import type { CommentWithProfile } from "@/lib/comment/types"
 import { submitMatchRating } from "@/lib/rating/submit-match-rating"
@@ -63,9 +57,10 @@ export function MatchView({
   }, [initialDetail])
 
   const { fixture } = detail
-  const { scoreline, statusLabel } = formatMatchScore(fixture)
+  const heroScore = formatMatchHeroScore(fixture)
   const contextLabel = matchContextLabel(detail)
   const canRate = isLoggedIn && detail.ratingsUnlocked
+  const ratingsLocked = !canRate
   const ratingOpen = ratingIndex != null && detail.rateableQueue[ratingIndex] != null
 
   const closeRatingSheet = useCallback(() => {
@@ -177,109 +172,29 @@ export function MatchView({
     })
   }
 
-  const kickoff = fixture.kickoff_at
-    ? formatMatchKickoffDateTime(fixture.kickoff_at)
-    : null
-
   return (
     <div className="mx-auto max-w-lg px-4 py-8 md:max-w-5xl">
-      <p className="eyebrow mb-2">Match</p>
+      <MatchHero fixture={fixture} detail={detail} heroScore={heroScore} />
 
-      <div className="mb-6 text-center">
-        {fixture.round_name && (
-          <p className="text-sm text-muted-foreground">{fixture.round_name}</p>
-        )}
-        {fixture.venue && (
-          <p className="text-sm text-muted-foreground">{fixture.venue}</p>
-        )}
-        {kickoff && <p className="text-sm text-muted-foreground">{kickoff}</p>}
-
-        <div className="mt-4 flex items-center justify-center gap-3">
-          <TeamFlag team={fixture.home_team} size="md" />
-          <div>
-            <p className="font-display text-3xl font-bold tabular-nums">{scoreline}</p>
-            <p className="text-sm font-medium text-muted-foreground">{statusLabel}</p>
-          </div>
-          <TeamFlag team={fixture.away_team} size="md" />
-        </div>
-        <p className="mt-2 text-sm font-semibold">
-          {fixture.home_team.name} · {fixture.away_team.name}
-        </p>
-      </div>
-
-      {canRate && detail.rateableQueue.length > 0 && (
-        <Button type="button" className="mb-4 w-full" onClick={handleRateAll}>
-          Rate all players
-        </Button>
+      {detail.penaltyShootout && (
+        <PenaltyShootoutSection shootout={detail.penaltyShootout} />
       )}
 
-      {!isLoggedIn && (
-        <p className="mb-4 text-center text-sm text-muted-foreground">
-          <Link href="/login" className="font-medium text-primary hover:underline">
-            Sign in
-          </Link>{" "}
-          to rate performances.
-        </p>
-      )}
-
-      {errorMessage && (
-        <p className="mb-4 text-center text-sm text-destructive" role="alert">
-          {errorMessage}
-        </p>
-      )}
-
-      <section className="mb-6">
-        <div className="mb-3 flex items-baseline justify-between gap-3">
-          <h2 className="h3">Lineups</h2>
-          {(detail.homeFormation || detail.awayFormation) && (
-            <span className="font-mono text-xs tabular-nums text-muted-foreground">
-              {detail.homeFormation ?? "?"} · {detail.awayFormation ?? "?"}
-            </span>
-          )}
-        </div>
-        {!detail.hasLineups ? (
-          <p className="body-sm text-muted-foreground">
-            Lineups are not available yet. Check back closer to kickoff.
-          </p>
-        ) : (
-          <LineupPitch
-            starters={detail.starters}
-            ratingsLocked={!canRate}
-            onPlayerClick={(player) => openRatingSheet(player)}
-          />
-        )}
-      </section>
-
-      <MatchSubstitutesSection
+      <MatchPageTabs
         fixture={fixture}
-        coaches={detail.coaches}
-        substitutesOn={detail.substitutesOn}
+        detail={detail}
         canRate={canRate}
-        onPlayerSelect={(player) => openRatingSheet(player)}
-      />
-
-      <MatchUnusedBenchSection
-        fixture={fixture}
-        benchUnused={detail.benchUnused}
-        onPlayerSelect={(player) => openRatingSheet(player)}
-      />
-
-      <CommentThread
-        initialComments={comments}
-        initialUserVotes={userVotes}
-        targetType="match"
-        targetId={fixture.id}
+        ratingsLocked={ratingsLocked}
         isLoggedIn={isLoggedIn}
+        comments={comments}
+        userVotes={userVotes}
         currentUserId={currentUserId}
+        errorMessage={errorMessage}
+        onRateAll={handleRateAll}
+        onPlayerClick={(player) => openRatingSheet(player)}
       />
 
-      <p className="body-sm text-center mt-6">
-        <Link href="/world-cup" className="text-primary underline-offset-4 hover:underline">
-          Back to World Cup
-        </Link>
-      </p>
-
-      <RatingSheet
+      <MatchRatingUI
         open={ratingOpen}
         players={detail.rateableQueue}
         activeIndex={ratingIndex ?? 0}

@@ -37,8 +37,53 @@ export type MatchCoach = {
   photoUrl: string | null
 }
 
+export type MatchGoalEntry = {
+  playerId: number
+  displayName: string
+  minute: number
+  extraMinute: number | null
+  isPenalty: boolean
+  isOwnGoal: boolean
+}
+
+export type MatchGroupedScorer = {
+  playerId: number
+  displayName: string
+  goals: MatchGoalEntry[]
+}
+
+export type MatchGoalScorers = {
+  home: MatchGoalEntry[]
+  away: MatchGoalEntry[]
+}
+
+export type PenaltyKick = {
+  side: PitchSide
+  playerId: number
+  playerName: string
+  /** This team's nth penalty (1–5). */
+  kickNumber: number
+  /** Overall shootout order from API extra_minute. */
+  sequenceOrder: number
+  scored: boolean
+  homeScoreAfter: number
+  awayScoreAfter: number
+}
+
+export type PenaltyShootout = {
+  homePenScore: number
+  awayPenScore: number
+  /** true = scored, false = missed, null = not taken (up to 5 slots). */
+  homeKicks: (boolean | null)[]
+  awayKicks: (boolean | null)[]
+  sequence: PenaltyKick[]
+}
+
 export type MatchDetail = {
   fixture: FixtureWithTeams
+  competitionLabel: string | null
+  goalScorers: MatchGoalScorers
+  penaltyShootout: PenaltyShootout | null
   ratingsUnlocked: boolean
   hasLineups: boolean
   starters: MatchLineupPlayer[]
