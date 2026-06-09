@@ -17,6 +17,15 @@ function stripAuthParams(url: URL): URL {
   return clean
 }
 
+/** Keep refreshed session cookies when proxy returns a redirect. */
+function redirectWithSession(target: URL, supabaseResponse: NextResponse) {
+  const response = NextResponse.redirect(target)
+  for (const cookie of supabaseResponse.cookies.getAll()) {
+    response.cookies.set(cookie)
+  }
+  return response
+}
+
 export async function proxy(request: NextRequest) {
   const { url, key } = getSupabasePublishableConfig()
 
@@ -45,20 +54,13 @@ export async function proxy(request: NextRequest) {
     if (error) {
       const loginUrl = new URL("/login", request.url)
       loginUrl.searchParams.set("error", "auth")
-      return NextResponse.redirect(loginUrl)
+      return redirectWithSession(loginUrl, supabaseResponse)
     }
 
     await syncOAuthProfilesFromAuth(supabase)
     const destination = await getPostOAuthRedirectPath(supabase)
     const redirectUrl = stripAuthParams(new URL(destination, request.url))
-    const redirectResponse = NextResponse.redirect(redirectUrl)
-
-    // Session cookies were written to supabaseResponse during exchange.
-    for (const cookie of supabaseResponse.cookies.getAll()) {
-      redirectResponse.cookies.set(cookie)
-    }
-
-    return redirectResponse
+    return redirectWithSession(redirectUrl, supabaseResponse)
   }
 
   const auth = await getServerAuth(supabase)
@@ -78,18 +80,17 @@ export async function proxy(request: NextRequest) {
       profile.country_code
 
     if (!onboardingDone) {
-      return NextResponse.redirect(new URL("/onboarding", request.url))
+      return redirectWithSession(new URL("/onboarding", request.url), supabaseResponse)
     }
   }
 
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
     if (!auth) {
-      const loginUrl = new URL("/login", request.url)
-      return NextResponse.redirect(loginUrl)
+      return redirectWithSession(new URL("/login", request.url), supabaseResponse)
     }
 
     if (!auth.isAdmin) {
-      return NextResponse.redirect(new URL("/", request.url))
+      return redirectWithSession(new URL("/", request.url), supabaseResponse)
     }
   }
 

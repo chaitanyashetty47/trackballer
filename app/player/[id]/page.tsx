@@ -35,7 +35,7 @@ export default async function PlayerPage({ params }: PageProps) {
       <p className="eyebrow mb-3 px-4 lg:ml-[5%] lg:px-0">Player</p>
 
       <div className="px-4 lg:ml-[5%] lg:w-[55%] lg:px-0">
-        <PlayerProfileHero profile={profile} canRateCareer={Boolean(user)} />
+        <PlayerProfileHero profile={profile} canRateCareer={Boolean(auth)} />
       </div>
 
       <div className="mt-6 px-4 lg:ml-[5%] lg:w-[55%] lg:px-0">
@@ -48,7 +48,7 @@ export default async function PlayerPage({ params }: PageProps) {
           initialUserVotes={userVotes}
           targetType="player"
           targetId={playerId}
-          isLoggedIn={Boolean(user)}
+          isLoggedIn={Boolean(auth)}
           currentUserId={auth?.userId ?? null}
         />
       </div>
