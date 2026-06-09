@@ -179,4 +179,20 @@ export class ApiFootballClient {
       season,
     });
   }
+
+  getPlayersByTeamSeason(teamId: number, season: number, page = 1) {
+    return this.get<ApiPlayerProfileItem[]>("/players", {
+      team: teamId,
+      season,
+      page,
+    });
+  }
+
+  getPlayersByLeagueSeason(leagueId: number, season: number, page = 1) {
+    return this.get<ApiPlayerProfileItem[]>("/players", {
+      league: leagueId,
+      season,
+      page,
+    });
+  }
 }

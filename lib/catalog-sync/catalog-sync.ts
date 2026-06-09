@@ -7,7 +7,6 @@ import {
   mapEvents,
   mapFixtureRow,
   mapLineups,
-  mapPlayerProfile,
   mapPlayersFromSquad,
   mapTeamFromFixtureSide,
   mapTeamFromLeague,
@@ -27,6 +26,7 @@ import {
   mergePlayerStub,
   type PlayerInsert,
 } from "./player-merge";
+import { mapPlayerProfile } from "./player-profile-picker";
 
 type Db = SupabaseClient<Database>;
 
@@ -306,7 +306,13 @@ export class CatalogSync {
     if (error) throw error;
   }
 
-  private async upsertPlayerProfile(row: PlayerInsert): Promise<void> {
+  private async upsertPlayerProfile(
+    row: PlayerInsert,
+    clubTeam?: Database["public"]["Tables"]["teams"]["Insert"] | null,
+  ): Promise<void> {
+    if (clubTeam) {
+      await this.upsertTeams([clubTeam]);
+    }
     const existing = (await this.fetchPlayersByIds([row.id])).get(row.id) ?? null;
     const squadTeamId = await this.fetchSquadNationalTeamId(row.id);
     const merged = mergePlayerProfile(existing, row, squadTeamId);
@@ -332,8 +338,13 @@ export class CatalogSync {
       throw new Error(`No profile returned for player ${playerId} season ${season}`);
     }
 
-    const row = mapPlayerProfile(item);
-    await this.upsertPlayerProfile(row);
+    const existing = (await this.fetchPlayersByIds([playerId])).get(playerId) ?? null;
+    const nationalTeamId =
+      existing?.national_team_id ?? (await this.fetchSquadNationalTeamId(playerId));
+    const { player: row, clubTeam } = mapPlayerProfile(item, {
+      nationalTeamId,
+    });
+    await this.upsertPlayerProfile(row, clubTeam);
 
     return {
       playerId,

@@ -11,17 +11,17 @@ function TrendingPlayerCardItem({ player }: { player: TrendingPlayerCard }) {
   return (
     <Link
       href={`/player/${player.id}`}
-      className="flex w-[7.5rem] shrink-0 flex-col items-center gap-2 rounded-lg border border-border bg-card p-3 transition-colors hover:bg-muted/30 sm:w-auto"
+      className="flex w-[7.5rem] shrink-0 flex-col items-center gap-3.5 rounded-lg border border-border bg-card p-3 transition-colors hover:bg-muted/30 sm:w-auto"
     >
       <CareerRing
-        name={player.displayName}
+        name={player.name}
         photoUrl={player.photoUrl}
         tier={player.tier}
         displayScore={player.displayScore}
         compact
       />
       <p className="line-clamp-2 w-full text-center text-xs font-semibold leading-tight">
-        {player.displayName}
+        {player.name}
       </p>
     </Link>
   )

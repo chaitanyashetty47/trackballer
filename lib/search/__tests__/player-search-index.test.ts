@@ -22,4 +22,16 @@ describe("matchPlayerIdsFromIndex", () => {
     expect(matchPlayerIdsFromIndex(index, "ronaldo", [3])).toEqual([3])
     expect(matchPlayerIdsFromIndex(index, "ronaldo", [1])).toEqual([])
   })
+
+  it("matches accent-insensitive last names", () => {
+    const accented = [
+      {
+        id: 10,
+        name: "J. Koundé",
+        firstname: "Jules Olivier",
+        lastname: "Koundé",
+      },
+    ]
+    expect(matchPlayerIdsFromIndex(accented, "kounde")).toEqual([10])
+  })
 })

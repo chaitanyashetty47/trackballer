@@ -13,6 +13,10 @@ const optionalNameField = z
   .max(80)
   .transform((s) => (s.length > 0 ? s : null))
 
+const positionField = z
+  .union([z.literal(""), z.enum(["GK", "DEF", "MID", "FWD"])])
+  .transform((v) => (v === "" ? null : v))
+
 const fixSchema = z.object({
   playerId: z.number().int().positive(),
   name: z.string().trim().min(1).max(120),
@@ -23,6 +27,11 @@ const fixSchema = z.object({
     .union([z.null(), z.number().int().min(1).max(100)])
     .optional()
     .transform((v) => v ?? null),
+  clubTeamId: z
+    .union([z.null(), z.number().int().positive()])
+    .optional()
+    .transform((v) => v ?? null),
+  primaryPosition: positionField.optional().transform((v) => v ?? null),
 })
 
 export type CatalogFixResult = { ok: true } | { ok: false; error: string }
@@ -34,6 +43,8 @@ export type PlayerCatalogEdit = {
   lastname: string | null
   photoUrl: string | null
   fmBaseRating: number | null
+  clubTeamId: number | null
+  primaryPosition: string | null
 }
 
 export type GetPlayerCatalogEditResult =
@@ -53,7 +64,9 @@ export async function getPlayerCatalogEdit(
   const admin = createAdminClient()
   const { data, error } = await admin
     .from("players")
-    .select("id, name, firstname, lastname, photo_url, fm_base_rating")
+    .select(
+      "id, name, firstname, lastname, photo_url, fm_base_rating, club_team_id, primary_position",
+    )
     .eq("id", playerId)
     .single()
 
@@ -70,6 +83,8 @@ export async function getPlayerCatalogEdit(
       lastname: data.lastname,
       photoUrl: data.photo_url,
       fmBaseRating: data.fm_base_rating,
+      clubTeamId: data.club_team_id,
+      primaryPosition: data.primary_position,
     },
   }
 }
@@ -121,6 +136,8 @@ export async function fixPlayerCatalog(input: unknown): Promise<CatalogFixResult
       lastname: parsed.data.lastname,
       photo_url: photoUrl,
       fm_base_rating: parsed.data.fmBaseRating,
+      club_team_id: parsed.data.clubTeamId,
+      primary_position: parsed.data.primaryPosition,
     })
     .eq("id", parsed.data.playerId)
 

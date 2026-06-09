@@ -15,7 +15,8 @@ export type CompetitionStrip = {
 
 export type TrendingPlayerCard = {
   id: number
-  displayName: string
+  /** Catalog name from `players.name` — not firstname + lastname. */
+  name: string
   photoUrl: string | null
   tier: string
   displayScore: number

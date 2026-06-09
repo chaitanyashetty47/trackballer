@@ -6,11 +6,22 @@ import { useState, useTransition } from "react"
 import { PlayerSearchPicker } from "@/components/admin/player-search-picker"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { SearchCombobox } from "@/components/ui/search-combobox"
 import {
   fixPlayerCatalog,
   getPlayerCatalogEdit,
 } from "@/lib/admin/actions/catalog-fix"
-import type { PlayerListItem } from "@/lib/search/types"
+import { teamsToComboboxOptions } from "@/lib/search/combobox-options"
+import type { BrowseClubOption, PlayerListItem } from "@/lib/search/types"
+
+const selectClass =
+  "flex h-9 w-full rounded-lg border border-border bg-background px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+
+type CatalogFixFormProps = {
+  clubOptions: BrowseClubOption[]
+  positions: string[]
+}
 
 function parseFmBaseRating(raw: string): number | null | "invalid" {
   const trimmed = raw.trim()
@@ -20,14 +31,17 @@ function parseFmBaseRating(raw: string): number | null | "invalid" {
   return n
 }
 
-export function CatalogFixForm() {
+export function CatalogFixForm({ clubOptions, positions }: CatalogFixFormProps) {
   const router = useRouter()
+  const clubComboboxOptions = teamsToComboboxOptions(clubOptions)
   const [player, setPlayer] = useState<PlayerListItem | null>(null)
   const [name, setName] = useState("")
   const [firstname, setFirstname] = useState("")
   const [lastname, setLastname] = useState("")
   const [fmBaseRating, setFmBaseRating] = useState("")
   const [photoUrl, setPhotoUrl] = useState("")
+  const [clubTeamId, setClubTeamId] = useState<string | null>(null)
+  const [primaryPosition, setPrimaryPosition] = useState("")
   const [message, setMessage] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -46,6 +60,8 @@ export function CatalogFixForm() {
       setLastname(d.lastname ?? "")
       setFmBaseRating(d.fmBaseRating != null ? String(d.fmBaseRating) : "")
       setPhotoUrl(d.photoUrl ?? "")
+      setClubTeamId(d.clubTeamId != null ? String(d.clubTeamId) : null)
+      setPrimaryPosition(d.primaryPosition ?? "")
     })
   }
 
@@ -69,6 +85,9 @@ export function CatalogFixForm() {
         lastname,
         photoUrl,
         fmBaseRating: fmParsed,
+        clubTeamId:
+          clubTeamId != null ? Number.parseInt(clubTeamId, 10) : null,
+        primaryPosition: primaryPosition || null,
       })
       if (!result.ok) {
         setMessage(result.error)
@@ -128,6 +147,36 @@ export function CatalogFixForm() {
             <p className="text-xs text-muted-foreground">
               Shown when first and last name are not both set.
             </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <SearchCombobox
+              options={clubComboboxOptions}
+              valueId={clubTeamId}
+              onValueIdChange={setClubTeamId}
+              label="Club"
+              placeholder="Search club…"
+              emptyMessage="No clubs found."
+              disabled={pending}
+            />
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="catalog-position">Position</Label>
+              <select
+                id="catalog-position"
+                value={primaryPosition}
+                onChange={(e) => setPrimaryPosition(e.target.value)}
+                className={selectClass}
+                disabled={pending}
+              >
+                <option value="">Not set</option>
+                {positions.map((pos) => (
+                  <option key={pos} value={pos}>
+                    {pos}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="flex flex-col gap-1.5">

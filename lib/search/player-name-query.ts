@@ -6,6 +6,7 @@ import {
   getPlayerSearchIndex,
   matchPlayerIdsFromIndex,
 } from "./player-search-index"
+import { normalizeSearchText } from "./normalize-search-text"
 
 type Db = SupabaseClient<Database>
 
@@ -29,12 +30,12 @@ export function playerMatchesNameQuery(
   name: string,
   rawQuery: string,
 ): boolean {
-  const needle = rawQuery.trim().toLowerCase()
+  const needle = normalizeSearchText(rawQuery)
   if (!needle) return true
 
   const parts = [name, firstname, lastname, `${firstname ?? ""} ${lastname ?? ""}`.trim()]
     .filter((part): part is string => Boolean(part?.trim()))
-    .map((part) => part.toLowerCase())
+    .map((part) => normalizeSearchText(part))
 
   return parts.some((part) => part.includes(needle))
 }

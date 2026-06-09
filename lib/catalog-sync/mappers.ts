@@ -6,7 +6,6 @@ import type {
   ApiLeagueTeamItem,
   ApiLineupItem,
   ApiLineupPlayer,
-  ApiPlayerProfileItem,
   ApiSquadItem,
   ApiTeamRef,
 } from "@/lib/api-football/types";
@@ -72,29 +71,6 @@ function mapTeamFromLeagueItem(
     country: item.team.country ?? null,
     logo_url: item.team.logo ?? null,
     is_national: options.isNational,
-  };
-}
-
-export function mapPlayerProfile(item: ApiPlayerProfileItem): PlayerInsert {
-  const p = item.player;
-  const birthRaw = p.birth?.date;
-  const birth_date =
-    birthRaw && birthRaw.length >= 10 ? birthRaw.slice(0, 10) : null;
-  const stats = item.statistics?.[0];
-  const position = stats?.games?.position;
-  const clubTeamId = stats?.team?.id ?? null;
-
-  return {
-    id: p.id,
-    name: p.name,
-    firstname: p.firstname ?? null,
-    lastname: p.lastname ?? null,
-    age: p.age ?? null,
-    birth_date,
-    nationality: p.nationality ?? null,
-    photo_url: p.photo ?? null,
-    primary_position: normalizePosition(position),
-    club_team_id: clubTeamId,
   };
 }
 
