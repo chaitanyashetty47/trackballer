@@ -5,6 +5,7 @@ import {
   getProfileByUsername,
   getProfilePageData,
 } from "@/lib/profile/queries"
+import { getServerAuth } from "@/lib/auth/server-session"
 import { createClient } from "@/lib/supabase/server"
 
 type PageProps = {
@@ -30,15 +31,13 @@ export default async function UserProfileByUsernamePage({ params }: PageProps) {
   }
 
   const supabase = await createClient()
-  const {
-    data: { user: sessionUser },
-  } = await supabase.auth.getUser()
+  const auth = await getServerAuth(supabase)
 
-  if (sessionUser?.id === profile.id) {
+  if (auth?.userId === profile.id) {
     redirect("/profile")
   }
 
-  const data = await getProfilePageData(profile, sessionUser?.id)
+  const data = await getProfilePageData(profile, auth?.userId)
 
   return <ProfilePage data={data} />
 }

@@ -9,6 +9,7 @@ import { buildMatchGoalScorers } from "@/lib/match/match-goals"
 import { buildPenaltyShootout } from "@/lib/match/penalty-shootout"
 import { buildSubOnInfoMap, type SubOnInfo } from "@/lib/match/sub-on-minutes"
 import type { MatchCoach, MatchDetail, MatchLineupPlayer } from "@/lib/match/types"
+import { getServerAuth } from "@/lib/auth/server-session"
 import { createClient } from "@/lib/supabase/server"
 
 const MATCH_FIXTURE_SELECT = `${FIXTURE_TEAM_SELECT},
@@ -327,17 +328,15 @@ async function loadUserRatings(
   supabase: Awaited<ReturnType<typeof createClient>>,
   fixtureId: number,
 ): Promise<Map<number, number>> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const auth = await getServerAuth(supabase)
   const map = new Map<number, number>()
-  if (!user) return map
+  if (!auth) return map
 
   const { data } = await supabase
     .from("match_ratings")
     .select("player_id, value")
     .eq("fixture_id", fixtureId)
-    .eq("user_id", user.id)
+    .eq("user_id", auth.userId)
 
   for (const row of (data ?? []) as UserRatingRow[]) {
     map.set(row.player_id, Number(row.value))

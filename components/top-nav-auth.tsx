@@ -11,14 +11,17 @@ function initials(displayName: string): string {
   return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase()
 }
 
-/** Server: sign-in link for guests, profile avatar for signed-in users. */
-export async function TopNavAuth() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+type TopNavAuthProps = {
+  /** When set by TopNav, skips a second auth read on the same request. */
+  userId?: string | null
+}
 
-  if (!user) {
+/** Server: sign-in link for guests, profile avatar for signed-in users. */
+export async function TopNavAuth({ userId: knownUserId = null }: TopNavAuthProps) {
+  const supabase = await createClient()
+  const userId = knownUserId
+
+  if (!userId) {
     return (
       <Link
         href="/login"
@@ -32,7 +35,7 @@ export async function TopNavAuth() {
   const { data: profile } = await supabase
     .from("profiles")
     .select("display_name, avatar_url, username")
-    .eq("id", user.id)
+    .eq("id", userId)
     .maybeSingle()
 
   const name = profile?.display_name?.trim() || "Fan"

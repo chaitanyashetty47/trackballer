@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server"
 
 import { isOnboardingBypassPath } from "@/lib/auth/onboarding-gate"
 import { getPostOAuthRedirectPath } from "@/lib/auth/post-oauth-redirect"
-import { readSessionClaims } from "@/lib/auth/session-claims"
+import { getServerAuth } from "@/lib/auth/server-session"
 import { syncOAuthProfilesFromAuth } from "@/lib/auth/sync-oauth-profiles"
 import { getSupabasePublishableConfig } from "@/lib/supabase/env"
 
@@ -61,17 +61,15 @@ export async function proxy(request: NextRequest) {
     return redirectResponse
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const auth = await getServerAuth(supabase)
 
   const pathname = request.nextUrl.pathname
 
-  if (user && !isOnboardingBypassPath(pathname)) {
+  if (auth && !isOnboardingBypassPath(pathname)) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("onboarding_completed_at, username, country_code")
-      .eq("id", user.id)
+      .eq("id", auth.userId)
       .maybeSingle()
 
     const onboardingDone =
@@ -85,13 +83,12 @@ export async function proxy(request: NextRequest) {
   }
 
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
-    if (!user) {
+    if (!auth) {
       const loginUrl = new URL("/login", request.url)
       return NextResponse.redirect(loginUrl)
     }
 
-    const { isAdmin } = await readSessionClaims(supabase)
-    if (!isAdmin) {
+    if (!auth.isAdmin) {
       return NextResponse.redirect(new URL("/", request.url))
     }
   }
