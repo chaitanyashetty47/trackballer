@@ -20,7 +20,7 @@ const fixSchema = z.object({
   lastname: optionalNameField,
   photoUrl: z.string().max(2000),
   fmBaseRating: z
-    .union([z.null(), z.number().min(1).max(99.99)])
+    .union([z.null(), z.number().int().min(1).max(100)])
     .optional()
     .transform((v) => v ?? null),
 })

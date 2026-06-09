@@ -6,6 +6,7 @@ import { PlayerTierCard } from "@/components/player/player-tier-card"
 import { TeamFlag } from "@/components/team-flag"
 import { positionDisplayLabel } from "@/lib/match/position-label"
 import type { PlayerProfile } from "@/lib/player/types"
+import { formatCareerScore } from "@/lib/rating/career-tier"
 
 type PlayerProfileHeroProps = {
   profile: PlayerProfile
@@ -45,6 +46,7 @@ export function PlayerProfileHero({ profile, canRateCareer }: PlayerProfileHeroP
           name={profile.displayName}
           photoUrl={profile.photoUrl}
           tier={profile.career.tier}
+          displayScore={profile.career.displayScore}
           compact
         />
         <div className="min-w-0 flex-1 text-left">
@@ -59,7 +61,7 @@ export function PlayerProfileHero({ profile, canRateCareer }: PlayerProfileHeroP
           ) : null}
           {canRateCareer && profile.userCareerRating != null ? (
             <p className="mt-1 text-xs text-primary-foreground/75">
-              You rated their career: {profile.userCareerRating.toFixed(1)} / 10
+              You rated their career: {formatCareerScore(profile.userCareerRating)}
             </p>
           ) : null}
         </div>

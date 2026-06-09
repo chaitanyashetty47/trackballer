@@ -42,7 +42,7 @@ export function mapPlayerBrowseRow(row: PlayerBrowseRow): PlayerListItem {
     position: row.primary_position,
     age: row.age,
     tier: career?.tier ?? "provisional",
-    displayScore: career ? Number(career.display_score) : 0,
+    displayScore: career ? Number(career.display_score) : 50,
     isProvisional: career?.is_provisional ?? true,
     clubName: row.club_team?.name ?? null,
   }

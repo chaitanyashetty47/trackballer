@@ -2,7 +2,9 @@
 
 Migrations implement the locked design in [`../../DATABASE.md`](../../DATABASE.md).
 
-**Project:** `cznywzmmqypprsmulxty` (configure in `config.toml`)
+**Staging + prod:** see [`../../STAGING-PROD.md`](../../STAGING-PROD.md) (two Supabase projects, Vercel Preview vs Production env vars).
+
+**Staging project:** `cznywzmmqypprsmulxty` (configure in `config.toml`)
 
 ## Migrations
 
@@ -15,6 +17,8 @@ Migrations implement the locked design in [`../../DATABASE.md`](../../DATABASE.m
 | `20260529050003` | `init_aggregate_triggers` | Career/match/form/tournament aggregates + comment vote counts |
 | `20260529050004` | `init_function_security` | `search_path` + revoke public execute on internal functions |
 | `20260605120000` | `custom_access_token_hook` | JWT `app_metadata.is_admin` + `is_onboarded` from `profiles` |
+| `20260609120000` | `career_ratings_100_scale` | Career votes 1–100 integer OVR; widen aggregate columns; tier thresholds ×10 |
+| `20260610120000` | `shuffle_career_player_rpc` | `get_shuffle_career_player()` — random unrated player with photo for home strip |
 
 ## Custom access token hook
 

@@ -36,7 +36,7 @@ describe("search query helpers", () => {
       clubId: "99",
       ageMin: "18",
       ageMax: "35",
-      minRating: "7.5",
+      minRating: "75",
       page: "2",
     })
 
@@ -46,7 +46,7 @@ describe("search query helpers", () => {
     expect(filters.clubId).toBe(99)
     expect(filters.ageMin).toBe(18)
     expect(filters.ageMax).toBe(35)
-    expect(filters.minRating).toBe(7.5)
+    expect(filters.minRating).toBe(75)
     expect(filters.sort).toBe("rating-desc")
     expect(filters.page).toBe(2)
     expect(filters.leagueSlug).toBe("world-cup")

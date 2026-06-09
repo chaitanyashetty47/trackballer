@@ -5,10 +5,16 @@ export function matchAverage(values: number[]): number | null {
   return Math.round((sum / values.length) * 100) / 100
 }
 
-/** True when value is 1–10 in 0.5 steps. */
+/** True when value is 1–10 in 0.5 steps (match ratings). */
 export function isValidRatingValue(value: number): boolean {
   if (value < 1 || value > 10) return false
   return Math.abs(value * 2 - Math.round(value * 2)) < 1e-9
+}
+
+/** True when value is 1–100 integer (career ratings). */
+export function isValidCareerRatingValue(value: number): boolean {
+  if (value < 1 || value > 100) return false
+  return Number.isInteger(value)
 }
 
 /** Display string for aggregate chips (e.g. 8.17). */

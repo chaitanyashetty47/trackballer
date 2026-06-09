@@ -1,6 +1,7 @@
 import {
   PROVISIONAL_CAREER_COPY,
-  careerTierCssVar,
+  careerRingCssVar,
+  careerRingTier,
   careerTierLabel,
   formatCareerScore,
 } from "@/lib/rating/career-tier"
@@ -13,8 +14,9 @@ type PlayerTierCardProps = {
 }
 
 export function PlayerTierCard({ career, className }: PlayerTierCardProps) {
-  const ringVar = careerTierCssVar(career.tier)
-  const label = careerTierLabel(career.tier)
+  const ringTier = careerRingTier(career.tier, career.displayScore)
+  const ringVar = careerRingCssVar(career.tier, career.displayScore)
+  const label = careerTierLabel(ringTier)
 
   return (
     <div

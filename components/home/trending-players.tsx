@@ -7,10 +7,6 @@ type TrendingPlayersProps = {
   players: TrendingPlayerCard[]
 }
 
-function formatScore(score: number): string {
-  return score.toFixed(1)
-}
-
 function TrendingPlayerCardItem({ player }: { player: TrendingPlayerCard }) {
   return (
     <Link
@@ -21,14 +17,11 @@ function TrendingPlayerCardItem({ player }: { player: TrendingPlayerCard }) {
         name={player.displayName}
         photoUrl={player.photoUrl}
         tier={player.tier}
+        displayScore={player.displayScore}
         compact
-        className="size-[4.5rem]"
       />
       <p className="line-clamp-2 w-full text-center text-xs font-semibold leading-tight">
         {player.displayName}
-      </p>
-      <p className="font-mono text-sm font-bold tabular-nums text-primary">
-        {formatScore(player.displayScore)}
       </p>
     </Link>
   )

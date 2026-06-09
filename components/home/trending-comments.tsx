@@ -1,23 +1,11 @@
 import Image from "next/image"
 import Link from "next/link"
 
+import { getCommentTimeSince } from "@/lib/comment/format-time"
 import type { TrendingCommentCard } from "@/lib/home/types"
 
 type TrendingCommentsProps = {
   comments: TrendingCommentCard[]
-}
-
-function getTimeSince(dateString: string): string {
-  const date = new Date(dateString)
-  const now = new Date()
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-
-  if (seconds < 60) return "now"
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`
-  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d`
-
-  return date.toLocaleDateString()
 }
 
 function TrendingCommentCardItem({ comment }: { comment: TrendingCommentCard }) {
@@ -40,7 +28,7 @@ function TrendingCommentCardItem({ comment }: { comment: TrendingCommentCard }) 
             className="size-3.5 object-contain"
           />
         ) : null}
-        <span>· {getTimeSince(comment.createdAt)}</span>
+        <span>· {getCommentTimeSince(comment.createdAt)}</span>
       </div>
       <p className="line-clamp-3 text-sm leading-snug">&ldquo;{comment.body}&rdquo;</p>
       <p className="mt-2 text-xs font-medium text-primary">→ {comment.playerName}</p>

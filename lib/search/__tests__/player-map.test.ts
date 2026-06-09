@@ -15,14 +15,14 @@ describe("mapPlayerBrowseRow", () => {
       age: 31,
       club_team: { name: "Bayern Munich" },
       career: {
-        display_score: 8.7,
+        display_score: 87,
         tier: "world_class",
         is_provisional: false,
       },
     })
 
     expect(item.displayName).toBe("Harry Kane")
-    expect(item.displayScore).toBe(8.7)
+    expect(item.displayScore).toBe(87)
     expect(item.clubName).toBe("Bayern Munich")
   })
 

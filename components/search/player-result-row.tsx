@@ -11,10 +11,6 @@ type PlayerResultRowProps = {
   className?: string
 }
 
-function formatScore(score: number): string {
-  return score.toFixed(1)
-}
-
 function PlayerResultRowContent({ player }: { player: PlayerListItem }) {
   const positionLabel = positionDisplayLabel(player.position)
   const meta = [player.nationality, positionLabel, player.age != null ? String(player.age) : null]
@@ -27,16 +23,14 @@ function PlayerResultRowContent({ player }: { player: PlayerListItem }) {
         name={player.displayName}
         photoUrl={player.photoUrl}
         tier={player.tier}
+        displayScore={player.displayScore}
         compact
-        className="size-11 shrink-0"
+        className="shrink-0"
       />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{player.displayName}</p>
         {meta ? <p className="truncate text-xs text-muted-foreground">{meta}</p> : null}
       </div>
-      <span className="font-mono text-sm font-bold tabular-nums text-primary">
-        {formatScore(player.displayScore)}
-      </span>
     </>
   )
 }

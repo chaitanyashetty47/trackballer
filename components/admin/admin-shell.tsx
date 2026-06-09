@@ -42,7 +42,7 @@ export function AdminShell({ children }: AdminShellProps) {
 
   return (
     <div className="flex min-h-svh flex-col">
-      <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border/80 bg-background/90 px-4 backdrop-blur-md">
+      <header className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b border-border/80 bg-background/90 px-4 backdrop-blur-md">
         <Link
           href="/admin"
           className="flex shrink-0 items-center gap-2"
