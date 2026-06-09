@@ -1,6 +1,5 @@
 import { cache } from "react"
 
-import { formatPlayerDisplayName } from "@/lib/player/display-name"
 import { createClient } from "@/lib/supabase/server"
 
 import type { TrendingPlayerCard } from "./types"
@@ -10,8 +9,6 @@ const TRENDING_LIMIT = 8
 const PLAYER_SELECT = `
   id,
   name,
-  firstname,
-  lastname,
   photo_url,
   career:player_career_aggregates(display_score, tier, is_provisional, vote_count)
 `
@@ -19,8 +16,6 @@ const PLAYER_SELECT = `
 type PlayerRow = {
   id: number
   name: string
-  firstname: string | null
-  lastname: string | null
   photo_url: string | null
   career: {
     display_score: number
@@ -33,7 +28,7 @@ type PlayerRow = {
 function mapPlayerRow(row: PlayerRow): TrendingPlayerCard {
   return {
     id: row.id,
-    displayName: formatPlayerDisplayName(row.firstname, row.lastname, row.name),
+    name: row.name,
     photoUrl: row.photo_url,
     tier: row.career?.tier ?? "provisional",
     displayScore: row.career ? Number(row.career.display_score) : 0,

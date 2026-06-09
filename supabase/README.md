@@ -70,6 +70,7 @@ Server routes under `/api/admin/sync/*`. Start dev server: `npm run dev` in `tra
 | `POST` | `http://localhost:3000/api/admin/sync/fixture/855736` | none (replace id) |
 | `POST` | `http://localhost:3000/api/admin/sync/player/891` | `{"seasonYear":2022}` optional |
 | `POST` | `http://localhost:3000/api/admin/sync/players/repair` | `{"limit":30,"seasonYear":2022}` optional |
+| `POST` | `http://localhost:3000/api/admin/sync/players/enrich` | `{"profileSeasonYear":2025,"squadSeasonYear":2026,"nationalTeamIds":[10]}` optional |
 
 ### Bootstrap (`POST /api/admin/sync/bootstrap`)
 
@@ -149,7 +150,9 @@ The sync client **serializes** every API-Football call (~6.5s apart at 10 req/mi
 | Step | API calls (approx.) | Time at 10/min |
 |------|---------------------|----------------|
 | Status | 0 | instant |
-| Bootstrap (catalog only) | ~42 | **~5 min** |
+| Bootstrap (catalog only, 32-team WC) | ~42 | **~5 min** |
+| Bootstrap (catalog only, 48-team WC 2026) | ~62 | **~6 min** |
+| Players enrich (per incomplete player) | 1 × incomplete count | 50 players ≈ **5 min** |
 | Bootstrap + all fixture details | ~234 | **~40 min** |
 | Pending fixture details | 3 × pending count | 3 × 56 ≈ **18 min** if 56 left |
 | One fixture detail | 3 | ~20s |
@@ -186,6 +189,25 @@ curl --location --request POST 'http://localhost:3000/api/admin/sync/players/rep
 ```
 
 Re-run repair until `candidates` in the response is `0` (or run with a higher `limit` when quota allows).
+
+### Player profiles + current club (DB-driven)
+
+Finds players **already in Postgres** missing any of: `firstname`, `lastname`, `nationality`, `birth_date`, or `club_team_id`. One API call per player (`GET /players?id&season`) — fills Kane-style gaps to match Dembélé-style rows and upserts each club into `teams`.
+
+```bash
+curl --location --request POST 'http://localhost:3000/api/admin/sync/players/enrich' \
+  --header 'Authorization: Bearer YOUR_SYNC_SECRET' \
+  --header 'Content-Type: application/json' \
+  --data '{"profileSeasonYear":2025,"squadSeasonYear":2026,"syncNationalTeam":true}'
+
+# England squad only (team id 10)
+curl --location --request POST 'http://localhost:3000/api/admin/sync/players/enrich' \
+  --header 'Authorization: Bearer YOUR_SYNC_SECRET' \
+  --header 'Content-Type: application/json' \
+  --data '{"profileSeasonYear":2025,"squadSeasonYear":2026,"nationalTeamIds":[10]}'
+```
+
+Omit `limit` to process **all** remaining candidates in one local run. On Vercel Hobby (300s cap), pass `"limit":30` and resume with `offset`. Pass `squadSeasonYear` to only enrich players linked in `player_season_squads` for that WC (skips Curacao and other non–2026-squad rows). Pass `nationalTeamIds` to narrow further (e.g. `[6,3]` Brazil + Croatia). Re-run until `candidates` is `0`. Set `profileSeasonYear` to the current domestic year so current clubs resolve (Kane → Bayern, Messi → Inter Miami, Ronaldo → Al Nassr).
 
 ## Editorial admin (`/admin`)
 

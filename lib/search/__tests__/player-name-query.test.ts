@@ -20,4 +20,22 @@ describe("playerMatchesNameQuery", () => {
   it("rejects unrelated names", () => {
     expect(playerMatchesNameQuery("Lionel", "Messi", "L. Messi", "kane")).toBe(false)
   })
+
+  it("matches without French accents", () => {
+    expect(
+      playerMatchesNameQuery("Jules Olivier", "Koundé", "J. Koundé", "kounde"),
+    ).toBe(true)
+  })
+
+  it("matches without Croatian accents", () => {
+    expect(
+      playerMatchesNameQuery("Luka", "Modrić", "L. Modrić", "modric"),
+    ).toBe(true)
+  })
+
+  it("matches without Spanish accents", () => {
+    expect(
+      playerMatchesNameQuery("Álvaro", "Morata", "Á. Morata", "alvaro"),
+    ).toBe(true)
+  })
 })
