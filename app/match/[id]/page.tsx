@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import { MatchView } from "@/components/match/match-view"
 import { getMatchDetail } from "@/lib/match/detail"
 import { getComments } from "@/lib/comment/queries"
+import { getServerAuth } from "@/lib/auth/server-session"
 import { createClient } from "@/lib/supabase/server"
 
 type PageProps = {
@@ -23,19 +24,17 @@ export default async function MatchPage({ params }: PageProps) {
   }
 
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const auth = await getServerAuth(supabase)
 
-  const { comments, userVotes } = await getComments("match", fixtureId, user?.id ?? null)
+  const { comments, userVotes } = await getComments("match", fixtureId, auth?.userId ?? null)
 
   return (
     <MatchView
       detail={detail}
-      isLoggedIn={user != null}
+      isLoggedIn={auth != null}
       comments={comments}
       userVotes={userVotes}
-      currentUserId={user?.id ?? null}
+      currentUserId={auth?.userId ?? null}
     />
   )
 }

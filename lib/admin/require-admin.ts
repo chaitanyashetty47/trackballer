@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 
+import { getServerAuth } from "@/lib/auth/server-session"
 import { createClient } from "@/lib/supabase/server"
 
 export type AdminSession = {
@@ -9,43 +10,39 @@ export type AdminSession = {
 /** Returns admin session or null (no redirect). */
 export async function getAdminSession(): Promise<AdminSession | null> {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const auth = await getServerAuth(supabase)
 
-  if (!user) return null
+  if (!auth) return null
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("is_admin")
-    .eq("id", user.id)
+    .eq("id", auth.userId)
     .single()
 
   if (!profile?.is_admin) return null
 
-  return { userId: user.id }
+  return { userId: auth.userId }
 }
 
 /** Gate for server pages: guests to login, non-admins to home. */
 export async function requireAdmin(): Promise<AdminSession> {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const auth = await getServerAuth(supabase)
 
-  if (!user) {
+  if (!auth) {
     redirect("/login")
   }
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("is_admin")
-    .eq("id", user.id)
+    .eq("id", auth.userId)
     .single()
 
   if (!profile?.is_admin) {
     redirect("/")
   }
 
-  return { userId: user.id }
+  return { userId: auth.userId }
 }

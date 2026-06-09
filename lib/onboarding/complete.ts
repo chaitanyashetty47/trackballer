@@ -1,5 +1,6 @@
 "use server"
 
+import { getServerAuth } from "@/lib/auth/server-session"
 import { completeOnboardingSchema } from "@/lib/onboarding/types"
 import { createClient } from "@/lib/supabase/server"
 
@@ -11,12 +12,9 @@ export async function completeOnboarding(
   input: unknown,
 ): Promise<CompleteOnboardingResult> {
   const supabase = await createClient()
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
+  const auth = await getServerAuth(supabase)
 
-  if (authError || !user) {
+  if (!auth) {
     return { ok: false, error: "You must be signed in." }
   }
 
@@ -44,7 +42,7 @@ export async function completeOnboarding(
       favourite_national_team_id: favouriteNationalTeamId,
       onboarding_completed_at: new Date().toISOString(),
     })
-    .eq("id", user.id)
+    .eq("id", auth.userId)
 
   if (updateError) {
     if (updateError.code === "23505") {

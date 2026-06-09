@@ -5,6 +5,7 @@ import {
   type ShuffleCareerPlayerRow,
   type ShufflePlayerCard,
 } from "@/lib/home/shuffle-career-player-map"
+import { getServerAuth } from "@/lib/auth/server-session"
 import { createClient } from "@/lib/supabase/server"
 
 export type FetchShuffleCareerPlayerResult =
@@ -13,11 +14,9 @@ export type FetchShuffleCareerPlayerResult =
 
 export async function fetchShuffleCareerPlayer(): Promise<FetchShuffleCareerPlayerResult> {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const auth = await getServerAuth(supabase)
 
-  if (!user) {
+  if (!auth) {
     return { ok: false, error: "Sign in required" }
   }
 

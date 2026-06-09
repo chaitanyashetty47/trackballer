@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
+import { getServerAuth } from "@/lib/auth/server-session"
+
 export type SessionClaims = {
   isAdmin: boolean
   isOnboarded: boolean
@@ -19,19 +21,13 @@ export function parseAppMetadataClaims(
   }
 }
 
-/** Read session claims from the current access token via getClaims(). */
+/** Read session claims from the current access token via getServerAuth(). */
 export async function readSessionClaims(
   supabase: SupabaseClient,
 ): Promise<SessionClaims> {
-  const { data, error } = await supabase.auth.getClaims()
+  const auth = await getServerAuth(supabase)
 
-  if (error || !data?.claims) {
-    return { isAdmin: false, isOnboarded: false }
-  }
-
-  const appMetadata = data.claims.app_metadata as
-    | Record<string, unknown>
-    | undefined
-
-  return parseAppMetadataClaims(appMetadata)
+  return auth
+    ? { isAdmin: auth.isAdmin, isOnboarded: auth.isOnboarded }
+    : { isAdmin: false, isOnboarded: false }
 }

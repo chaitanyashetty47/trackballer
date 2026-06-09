@@ -1,5 +1,6 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js"
 
+import { getFullAuthUser } from "@/lib/auth/server-session"
 import {
   buildAvatarCacheUpdate,
   type AvatarSource,
@@ -74,9 +75,7 @@ function hasProvider(user: AuthUser, provider: "google" | "x"): boolean {
 export async function syncOAuthProfilesFromAuth(
   supabase: SupabaseClient<Database>,
 ): Promise<void> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getFullAuthUser(supabase)
 
   if (!user) return
 

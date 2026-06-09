@@ -2,22 +2,21 @@ import { redirect } from "next/navigation"
 
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard"
 import { getOnboardingOptions } from "@/lib/onboarding/options"
+import { getServerAuth } from "@/lib/auth/server-session"
 import { createClient } from "@/lib/supabase/server"
 
 export default async function OnboardingPage() {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const auth = await getServerAuth(supabase)
 
-  if (!user) {
+  if (!auth) {
     redirect("/login")
   }
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("onboarding_completed_at, username, country_code")
-    .eq("id", user.id)
+    .eq("id", auth.userId)
     .maybeSingle()
 
   if (

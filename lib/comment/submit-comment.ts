@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { normalizeCommentRow } from "@/lib/comment/normalize"
+import { requireServerAuth } from "@/lib/auth/server-session"
 import { createClient } from "@/lib/supabase/server"
 import {
   submitCommentSchema,
@@ -32,16 +33,18 @@ export async function submitComment(input: unknown): Promise<SubmitCommentResult
   const { body, target_type, player_id, fixture_id, parent_id } = parsed.data
 
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const gate = await requireServerAuth(supabase)
 
-  if (!user) {
+  if (!gate.ok) {
     return { ok: false, error: "Sign in to comment." }
   }
+
+  const { userId } = gate.auth
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("is_banned")
-    .eq("id", user.id)
+    .eq("id", userId)
     .single()
 
   if (profileError || !profile || profile.is_banned) {
@@ -49,7 +52,7 @@ export async function submitComment(input: unknown): Promise<SubmitCommentResult
   }
 
   const commentData: any = {
-    user_id: user.id,
+    user_id: userId,
     body,
     target_type,
     parent_id: parent_id || null,
@@ -100,11 +103,13 @@ export async function deleteComment(input: unknown): Promise<DeleteCommentResult
   const { comment_id } = parsed.data
 
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const gate = await requireServerAuth(supabase)
 
-  if (!user) {
+  if (!gate.ok) {
     return { ok: false, error: "Sign in to delete comments." }
   }
+
+  const { userId } = gate.auth
 
   const { data: comment, error: fetchError } = await supabase
     .from("comments")
@@ -119,11 +124,11 @@ export async function deleteComment(input: unknown): Promise<DeleteCommentResult
   const { data: profile } = await supabase
     .from("profiles")
     .select("is_admin")
-    .eq("id", user.id)
+    .eq("id", userId)
     .single()
 
   const isAdmin = profile?.is_admin ?? false
-  const isOwner = comment.user_id === user.id
+  const isOwner = comment.user_id === userId
 
   if (!isOwner && !isAdmin) {
     return { ok: false, error: "You cannot delete this comment." }

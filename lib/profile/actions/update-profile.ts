@@ -6,6 +6,7 @@ import { z } from "zod"
 import { buildAvatarCacheUpdate } from "@/lib/profile/display-avatar"
 import { normalizeSocialHandle } from "@/lib/profile/validate-social-handles"
 import { countryCodeSchema } from "@/lib/profile/validate-username"
+import { requireServerAuth } from "@/lib/auth/server-session"
 import { createClient } from "@/lib/supabase/server"
 
 const updateProfileSchema = z.object({
@@ -31,13 +32,13 @@ export type UpdateProfileResult = { ok: true } | { ok: false; error: string }
 
 export async function updateProfile(input: unknown): Promise<UpdateProfileResult> {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const gate = await requireServerAuth(supabase)
 
-  if (!user) {
+  if (!gate.ok) {
     return { ok: false, error: "Sign in to edit your profile." }
   }
+
+  const { userId } = gate.auth
 
   const parsed = updateProfileSchema.safeParse(input)
   if (!parsed.success) {
@@ -52,7 +53,7 @@ export async function updateProfile(input: unknown): Promise<UpdateProfileResult
     .select(
       "favourite_club_id, onboarding_completed_at, username, google_avatar_url, x_avatar_url, avatar_source, avatar_url",
     )
-    .eq("id", user.id)
+    .eq("id", userId)
     .single()
 
   if (fetchError || !existing) {
@@ -94,7 +95,7 @@ export async function updateProfile(input: unknown): Promise<UpdateProfileResult
       instagram_handle: data.instagramHandle,
       ...avatarFields,
     })
-    .eq("id", user.id)
+    .eq("id", userId)
 
   if (updateError) {
     return { ok: false, error: "Could not save profile. Try again." }

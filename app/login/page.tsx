@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 
 import { LoginView } from "@/components/login/login-view"
 import { getPostOAuthRedirectPath } from "@/lib/auth/post-oauth-redirect"
+import { getServerAuth } from "@/lib/auth/server-session"
 import { createClient } from "@/lib/supabase/server"
 
 type PageProps = {
@@ -10,11 +11,9 @@ type PageProps = {
 
 export default async function LoginPage({ searchParams }: PageProps) {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const auth = await getServerAuth(supabase)
 
-  if (user) {
+  if (auth) {
     redirect(await getPostOAuthRedirectPath(supabase))
   }
 

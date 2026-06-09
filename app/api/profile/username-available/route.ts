@@ -4,6 +4,7 @@ import {
   normalizeUsername,
   validateUsernameFormat,
 } from "@/lib/profile/validate-username"
+import { getServerAuth } from "@/lib/auth/server-session"
 import { createClient } from "@/lib/supabase/server"
 
 export async function GET(request: Request) {
@@ -17,9 +18,7 @@ export async function GET(request: Request) {
   }
 
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const auth = await getServerAuth(supabase)
 
   const { data: existing } = await supabase
     .from("profiles")
@@ -27,7 +26,7 @@ export async function GET(request: Request) {
     .ilike("username", normalized)
     .maybeSingle()
 
-  if (existing && existing.id !== user?.id) {
+  if (existing && existing.id !== auth?.userId) {
     return NextResponse.json({ available: false, error: "That username is taken." })
   }
 

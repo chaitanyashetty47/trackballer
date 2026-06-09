@@ -11,13 +11,12 @@ import { getTrendingComments } from "@/lib/home/trending-comments"
 import { getPublishedTeamOfTheStage } from "@/lib/home/team-of-the-stage"
 import { getTrendingPlayers } from "@/lib/home/trending-players"
 import { getYourTeamToday } from "@/lib/home/your-team-today"
+import { getServerAuth } from "@/lib/auth/server-session"
 import { createClient } from "@/lib/supabase/server"
 
 export default async function HomePage() {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const auth = await getServerAuth(supabase)
 
   const [strip, season, trendingPlayers, trendingComments, yourTeamToday, totw] =
     await Promise.all([
@@ -25,7 +24,7 @@ export default async function HomePage() {
       getWorldCupSeason(),
       getTrendingPlayers(),
       getTrendingComments(),
-      getYourTeamToday(user?.id ?? null),
+      getYourTeamToday(auth?.userId ?? null),
       getPublishedTeamOfTheStage(),
     ])
 
@@ -47,7 +46,7 @@ export default async function HomePage() {
           </div>
 
           <TrendingComments comments={trendingComments} />
-          <CareerShuffleStrip isLoggedIn={!!user} />
+          <CareerShuffleStrip isLoggedIn={!!auth} />
           <TeamOfTheStageStrip team={totw} />
         </div>
 

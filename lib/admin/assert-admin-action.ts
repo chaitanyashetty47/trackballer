@@ -1,3 +1,4 @@
+import { getServerAuth } from "@/lib/auth/server-session"
 import { createClient } from "@/lib/supabase/server"
 
 import type { AdminSession } from "./require-admin"
@@ -11,23 +12,21 @@ export async function assertAdminAction(): Promise<
   { ok: true; admin: AdminSession } | { ok: false; error: string }
 > {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const auth = await getServerAuth(supabase)
 
-  if (!user) {
+  if (!auth) {
     return { ok: false, error: "Sign in to continue." }
   }
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("is_admin")
-    .eq("id", user.id)
+    .eq("id", auth.userId)
     .single()
 
   if (!profile?.is_admin) {
     return { ok: false, error: "You do not have admin access." }
   }
 
-  return { ok: true, admin: { userId: user.id } }
+  return { ok: true, admin: { userId: auth.userId } }
 }

@@ -6,6 +6,7 @@ import { PlayerProfileHero } from "@/components/player/player-profile-hero"
 import { PlayerRecentMatches } from "@/components/player/player-recent-matches"
 import { getComments } from "@/lib/comment/queries"
 import { getPlayerProfile } from "@/lib/player/detail"
+import { getServerAuth } from "@/lib/auth/server-session"
 import { createClient } from "@/lib/supabase/server"
 
 type PageProps = {
@@ -21,22 +22,20 @@ export default async function PlayerPage({ params }: PageProps) {
   }
 
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const profile = await getPlayerProfile(playerId, user?.id ?? null)
+  const auth = await getServerAuth(supabase)
+  const profile = await getPlayerProfile(playerId, auth?.userId ?? null)
   if (!profile) {
     notFound()
   }
 
-  const { comments, userVotes } = await getComments("player", playerId, user?.id ?? null)
+  const { comments, userVotes } = await getComments("player", playerId, auth?.userId ?? null)
 
   return (
     <div className="w-full py-8">
       <p className="eyebrow mb-3 px-4 lg:ml-[5%] lg:px-0">Player</p>
 
       <div className="px-4 lg:ml-[5%] lg:w-[55%] lg:px-0">
-        <PlayerProfileHero profile={profile} canRateCareer={Boolean(user)} />
+        <PlayerProfileHero profile={profile} canRateCareer={Boolean(auth)} />
       </div>
 
       <div className="mt-6 px-4 lg:ml-[5%] lg:w-[55%] lg:px-0">
@@ -49,8 +48,8 @@ export default async function PlayerPage({ params }: PageProps) {
           initialUserVotes={userVotes}
           targetType="player"
           targetId={playerId}
-          isLoggedIn={Boolean(user)}
-          currentUserId={user?.id ?? null}
+          isLoggedIn={Boolean(auth)}
+          currentUserId={auth?.userId ?? null}
         />
       </div>
 

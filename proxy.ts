@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server"
 
 import { isOnboardingBypassPath } from "@/lib/auth/onboarding-gate"
 import { getPostOAuthRedirectPath } from "@/lib/auth/post-oauth-redirect"
-import { readSessionClaims } from "@/lib/auth/session-claims"
+import { getServerAuth } from "@/lib/auth/server-session"
 import { syncOAuthProfilesFromAuth } from "@/lib/auth/sync-oauth-profiles"
 import { getSupabasePublishableConfig } from "@/lib/supabase/env"
 
@@ -15,6 +15,15 @@ function stripAuthParams(url: URL): URL {
     clean.searchParams.delete(key)
   }
   return clean
+}
+
+/** Keep refreshed session cookies when proxy returns a redirect. */
+function redirectWithSession(target: URL, supabaseResponse: NextResponse) {
+  const response = NextResponse.redirect(target)
+  for (const cookie of supabaseResponse.cookies.getAll()) {
+    response.cookies.set(cookie)
+  }
+  return response
 }
 
 export async function proxy(request: NextRequest) {
@@ -45,33 +54,24 @@ export async function proxy(request: NextRequest) {
     if (error) {
       const loginUrl = new URL("/login", request.url)
       loginUrl.searchParams.set("error", "auth")
-      return NextResponse.redirect(loginUrl)
+      return redirectWithSession(loginUrl, supabaseResponse)
     }
 
     await syncOAuthProfilesFromAuth(supabase)
     const destination = await getPostOAuthRedirectPath(supabase)
     const redirectUrl = stripAuthParams(new URL(destination, request.url))
-    const redirectResponse = NextResponse.redirect(redirectUrl)
-
-    // Session cookies were written to supabaseResponse during exchange.
-    for (const cookie of supabaseResponse.cookies.getAll()) {
-      redirectResponse.cookies.set(cookie)
-    }
-
-    return redirectResponse
+    return redirectWithSession(redirectUrl, supabaseResponse)
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const auth = await getServerAuth(supabase)
 
   const pathname = request.nextUrl.pathname
 
-  if (user && !isOnboardingBypassPath(pathname)) {
+  if (auth && !isOnboardingBypassPath(pathname)) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("onboarding_completed_at, username, country_code")
-      .eq("id", user.id)
+      .eq("id", auth.userId)
       .maybeSingle()
 
     const onboardingDone =
@@ -80,19 +80,17 @@ export async function proxy(request: NextRequest) {
       profile.country_code
 
     if (!onboardingDone) {
-      return NextResponse.redirect(new URL("/onboarding", request.url))
+      return redirectWithSession(new URL("/onboarding", request.url), supabaseResponse)
     }
   }
 
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
-    if (!user) {
-      const loginUrl = new URL("/login", request.url)
-      return NextResponse.redirect(loginUrl)
+    if (!auth) {
+      return redirectWithSession(new URL("/login", request.url), supabaseResponse)
     }
 
-    const { isAdmin } = await readSessionClaims(supabase)
-    if (!isAdmin) {
-      return NextResponse.redirect(new URL("/", request.url))
+    if (!auth.isAdmin) {
+      return redirectWithSession(new URL("/", request.url), supabaseResponse)
     }
   }
 

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 
+import { requireServerAuth } from "@/lib/auth/server-session"
 import { submitCareerRatingSchema } from "@/lib/rating/types"
 import { createClient } from "@/lib/supabase/server"
 
@@ -19,11 +20,9 @@ export async function submitCareerRating(
   }
 
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const gate = await requireServerAuth(supabase)
 
-  if (!user) {
+  if (!gate.ok) {
     return { ok: false, error: "Sign in to rate careers." }
   }
 
@@ -31,7 +30,7 @@ export async function submitCareerRating(
 
   const { error } = await supabase.from("career_ratings").upsert(
     {
-      user_id: user.id,
+      user_id: gate.auth.userId,
       player_id: playerId,
       value,
     },
