@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { isValidRatingValue } from "@/lib/rating/engine"
+import { isValidCareerRatingValue, isValidRatingValue } from "@/lib/rating/engine"
 
 export const submitMatchRatingSchema = z.object({
   fixtureId: z.number().int().positive(),
@@ -16,7 +16,10 @@ export const submitCareerRatingSchema = z.object({
   playerId: z.number().int().positive(),
   value: z
     .number()
-    .refine(isValidRatingValue, "Rating must be between 1 and 10 in 0.5 steps"),
+    .refine(
+      isValidCareerRatingValue,
+      "Rating must be a whole number between 1 and 100",
+    ),
 })
 
 export type SubmitCareerRatingInput = z.infer<typeof submitCareerRatingSchema>

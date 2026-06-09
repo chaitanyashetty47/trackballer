@@ -6,8 +6,8 @@ import { Slider } from "@/components/ui/slider"
 export const PLAYER_AGE_MIN = 16
 export const PLAYER_AGE_MAX = 45
 export const PLAYER_RATING_MIN = 1
-export const PLAYER_RATING_MAX = 10
-export const PLAYER_RATING_STEP = 0.5
+export const PLAYER_RATING_MAX = 100
+export const PLAYER_RATING_STEP = 1
 
 export function isFullAgeRange(range: [number, number]): boolean {
   return range[0] <= PLAYER_AGE_MIN && range[1] >= PLAYER_AGE_MAX
@@ -18,7 +18,7 @@ export function isNoMinRating(value: number): boolean {
 }
 
 export function formatRatingValue(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(1)
+  return String(Math.round(value))
 }
 
 function sliderValues(next: number | readonly number[]): number[] {

@@ -5,16 +5,20 @@ import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 import { createPortal } from "react-dom"
 
+import { CareerRatingSlider } from "@/components/player/career-rating-slider"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { Slider } from "@/components/ui/slider"
 import { useMounted } from "@/hooks/use-mounted"
-import { isValidRatingValue } from "@/lib/rating/engine"
+import {
+  CAREER_RATING_DEFAULT,
+  CAREER_RATING_MAX,
+  CAREER_RATING_MIN,
+  careerTierLabel,
+  formatCareerScore,
+  tierForScore,
+} from "@/lib/rating/career-tier"
+import { isValidCareerRatingValue } from "@/lib/rating/engine"
 import { submitCareerRating } from "@/lib/rating/submit-career-rating"
 import { cn } from "@/lib/utils"
-
-const CAREER_RATING_MIN = 1
-const CAREER_RATING_MAX = 10
-const CAREER_RATING_STEP = 0.5
 
 type PlayerCareerRatingCtaProps = {
   playerId: number
@@ -24,6 +28,8 @@ type PlayerCareerRatingCtaProps = {
   /** Header pill (FotMob-style) vs stacked default. */
   layout?: "default" | "header"
   className?: string
+  /** Called after a successful submit (e.g. home shuffle loads next player). */
+  onRated?: () => void
 }
 
 export function PlayerCareerRatingCta({
@@ -33,12 +39,15 @@ export function PlayerCareerRatingCta({
   initialValue,
   layout = "default",
   className,
+  onRated,
 }: PlayerCareerRatingCtaProps) {
   const router = useRouter()
   const mounted = useMounted()
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState(
-    initialValue != null && isValidRatingValue(initialValue) ? initialValue : 7.5,
+    initialValue != null && isValidCareerRatingValue(initialValue)
+      ? initialValue
+      : CAREER_RATING_DEFAULT,
   )
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -52,6 +61,7 @@ export function PlayerCareerRatingCta({
         return
       }
       setOpen(false)
+      onRated?.()
       router.refresh()
     })
   }
@@ -69,7 +79,9 @@ export function PlayerCareerRatingCta({
   const personalCopy =
     initialValue == null
       ? "You have not rated this career yet."
-      : `You rated their career: ${initialValue.toFixed(1)} / 10`
+      : `You rated their career: ${formatCareerScore(initialValue)}`
+
+  const tierLabel = careerTierLabel(tierForScore(value))
 
   const dialog =
     open && mounted
@@ -93,29 +105,23 @@ export function PlayerCareerRatingCta({
                 Rate {playerName}
               </h2>
               <p className="mt-1 text-center text-sm text-muted-foreground">
-                Rate overall career from 1 to 10.
+                Rate overall career from 1 to 100.
               </p>
 
-              <p className="mt-4 text-center font-mono text-4xl font-bold tabular-nums text-primary">
-                {value.toFixed(1)}
+              <p className="mt-4 text-center font-mono text-5xl font-bold tabular-nums text-foreground">
+                {value}
               </p>
-              <Slider
+              <p className="text-center text-sm font-medium text-muted-foreground">
+                {tierLabel}
+              </p>
+              <CareerRatingSlider
                 min={CAREER_RATING_MIN}
                 max={CAREER_RATING_MAX}
-                step={CAREER_RATING_STEP}
-                value={[value]}
-                onValueChange={(next) => {
-                  const values = typeof next === "number" ? [next] : [...next]
-                  if (values.length >= 1) setValue(values[0])
-                }}
+                value={value}
+                onValueChange={setValue}
                 className="mt-4 w-full"
                 aria-label="Career rating value"
-                aria-valuetext={`${value.toFixed(1)} out of 10`}
               />
-              <div className="mt-1 flex justify-between text-xs text-muted-foreground">
-                <span>1</span>
-                <span>10</span>
-              </div>
 
               {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
 

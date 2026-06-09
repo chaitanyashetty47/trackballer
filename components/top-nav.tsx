@@ -9,7 +9,7 @@ export async function TopNav() {
   const { isAdmin } = await readSessionClaims(supabase)
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border/80 bg-background/90 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-border/80 bg-background/90 backdrop-blur-md">
       <div className="flex h-14 items-center gap-1.5 px-3 sm:gap-2 sm:px-4">
         <TopNavChrome showAdminLink={isAdmin} />
         <TopNavAuth />

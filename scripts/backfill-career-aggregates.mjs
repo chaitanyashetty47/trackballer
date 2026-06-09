@@ -55,7 +55,7 @@ try {
 const updates = [];
 for (const row of rows) {
   const fm = row.players?.fm_base_rating;
-  const displayScore = fm != null ? Number(fm) : 5;
+  const displayScore = fm != null ? Number(fm) : 50;
   if (Number(row.display_score) === displayScore) continue;
   updates.push({ player_id: row.player_id, display_score: displayScore });
 }

@@ -16,8 +16,8 @@ function parseFmBaseRating(raw: string): number | null | "invalid" {
   const trimmed = raw.trim()
   if (!trimmed) return null
   const n = Number(trimmed)
-  if (!Number.isFinite(n) || n < 1 || n > 99.99) return "invalid"
-  return Math.round(n * 100) / 100
+  if (!Number.isFinite(n) || n < 1 || n > 100 || !Number.isInteger(n)) return "invalid"
+  return n
 }
 
 export function CatalogFixForm() {
@@ -57,7 +57,7 @@ export function CatalogFixForm() {
 
     const fmParsed = parseFmBaseRating(fmBaseRating)
     if (fmParsed === "invalid") {
-      setMessage("Overall rating must be between 1 and 99.99, or leave empty.")
+      setMessage("Overall rating must be a whole number between 1 and 100, or leave empty.")
       return
     }
 
@@ -138,11 +138,11 @@ export function CatalogFixForm() {
               id="catalog-fm"
               type="number"
               min={1}
-              max={99.99}
-              step={0.01}
+              max={100}
+              step={1}
               value={fmBaseRating}
               onChange={(e) => setFmBaseRating(e.target.value)}
-              placeholder="e.g. 88.5"
+              placeholder="e.g. 88"
               disabled={pending}
             />
             <p className="text-xs text-muted-foreground">

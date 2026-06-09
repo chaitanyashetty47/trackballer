@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { CommentTime } from "@/components/comment/comment-time"
 import type { CommentDisplay } from "@/lib/comment/types"
 
 interface CommentItemProps {
@@ -43,7 +44,6 @@ export function CommentItem({
   const isPending = comment.isPending === true
   const isDeletedStub = comment.is_deleted
   const isOwner = currentUserId === comment.user_id
-  const timeSince = getTimeSince(comment.created_at)
   const handle =
     comment.profile?.username ?? comment.profile?.display_name ?? "user"
   const profileHref = comment.profile?.username
@@ -117,7 +117,7 @@ export function CommentItem({
                 className="h-4 w-4"
               />
             )}
-            <span>{isPending ? "posting…" : timeSince}</span>
+            <CommentTime dateString={comment.created_at} pending={isPending} />
           </div>
 
           <p className="mt-1 break-words text-sm text-foreground">
@@ -208,17 +208,4 @@ export function CommentItem({
       </Dialog>
     </>
   )
-}
-
-function getTimeSince(dateString: string): string {
-  const date = new Date(dateString)
-  const now = new Date()
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-
-  if (seconds < 60) return "now"
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`
-  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d`
-
-  return date.toLocaleDateString()
 }

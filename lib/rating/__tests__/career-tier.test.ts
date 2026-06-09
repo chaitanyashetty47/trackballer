@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest"
 
 import {
   careerBlend,
+  careerRingCssVar,
+  careerRingTier,
   careerTierCssVar,
   careerTierLabel,
   formatCareerScore,
@@ -36,27 +38,38 @@ describe("careerTierCssVar", () => {
 })
 
 describe("tierForScore", () => {
-  it("uses locked boundaries", () => {
-    expect(tierForScore(9)).toBe("elite")
-    expect(tierForScore(8.99)).toBe("world_class")
-    expect(tierForScore(9.0)).toBe("elite")
-    expect(tierForScore(2.99)).toBe("unwatchable")
+  it("uses locked boundaries on 1–100 scale", () => {
+    expect(tierForScore(90)).toBe("elite")
+    expect(tierForScore(89)).toBe("world_class")
+    expect(tierForScore(90)).toBe("elite")
+    expect(tierForScore(29)).toBe("unwatchable")
   })
 })
 
 describe("formatCareerScore", () => {
-  it("formats one decimal", () => {
-    expect(formatCareerScore(8.17)).toBe("8.2")
+  it("formats as integer OVR", () => {
+    expect(formatCareerScore(82)).toBe("82")
     expect(formatCareerScore(null)).toBe("—")
+  })
+})
+
+describe("careerRingTier", () => {
+  it("derives colour tier from score when provisional", () => {
+    expect(careerRingTier("provisional", 82)).toBe("world_class")
+    expect(careerRingCssVar("provisional", 82)).toBe("--rating-world-class")
+  })
+
+  it("keeps blended tier when not provisional", () => {
+    expect(careerRingTier("elite", 92)).toBe("elite")
   })
 })
 
 describe("careerBlend", () => {
   it("keeps FM score before 10 votes", () => {
-    expect(careerBlend(9.5, 8.1, 9)).toBe(8.1)
+    expect(careerBlend(95, 81, 9)).toBe(81)
   })
 
   it("switches to blended score at exactly 10 votes", () => {
-    expect(careerBlend(9.0, 8.0, 10)).toBe(8.2)
+    expect(careerBlend(90, 80, 10)).toBe(82)
   })
 })

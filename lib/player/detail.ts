@@ -72,7 +72,7 @@ type MatchAggregateRow = {
 
 const DEFAULT_CAREER: PlayerCareerAggregate = {
   voteCount: 0,
-  displayScore: 5,
+  displayScore: 50,
   isProvisional: true,
   tier: "provisional",
 }

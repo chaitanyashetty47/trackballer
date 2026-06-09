@@ -1,3 +1,4 @@
+import { CareerShuffleStrip } from "@/components/home/career-shuffle-strip"
 import { CompetitionStrip } from "@/components/home/competition-strip"
 import { LatestMatches } from "@/components/home/latest-matches"
 import { TeamOfTheStageStrip } from "@/components/home/team-of-the-stage-strip"
@@ -46,6 +47,7 @@ export default async function HomePage() {
           </div>
 
           <TrendingComments comments={trendingComments} />
+          <CareerShuffleStrip isLoggedIn={!!user} />
           <TeamOfTheStageStrip team={totw} />
         </div>
 

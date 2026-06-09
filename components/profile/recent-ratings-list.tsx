@@ -1,6 +1,7 @@
 import Link from "next/link"
 
 import type { RecentRatingItem } from "@/lib/profile/types"
+import { formatCareerScore } from "@/lib/rating/career-tier"
 
 type RecentRatingsListProps = {
   ratings: RecentRatingItem[]
@@ -24,7 +25,7 @@ export function RecentRatingsList({ ratings }: RecentRatingsListProps) {
             <span className="text-sm font-medium">{r.playerName}</span>
             <span className="font-mono text-sm font-bold tabular-nums text-primary">
               {r.kind === "career" ? "Career " : ""}
-              {r.value.toFixed(1)}
+              {r.kind === "career" ? formatCareerScore(r.value) : r.value.toFixed(1)}
             </span>
           </Link>
         </li>
