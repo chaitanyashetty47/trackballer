@@ -23,16 +23,27 @@ export type TrendingPlayerCard = {
   isProvisional: boolean
 }
 
+type TrendingCommentTeam = {
+  id: number
+  name: string
+  logo_url: string | null
+}
+
 export type TrendingCommentCard = {
   id: number
   body: string
   score: number
   upvoteCount: number
   createdAt: string
-  authorName: string
-  authorClubLogoUrl: string | null
+  authorUserId: string
+  authorUsername: string | null
+  authorDisplayName: string
+  authorClub: TrendingCommentTeam | null
+  authorNationalTeam: TrendingCommentTeam | null
   playerId: number
+  /** Catalog name from `players.name`. */
   playerName: string
+  playerPhotoUrl: string | null
 }
 
 export type YourTeamTodayItem = {

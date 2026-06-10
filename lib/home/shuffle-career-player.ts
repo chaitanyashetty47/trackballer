@@ -2,7 +2,6 @@
 
 import {
   mapShuffleCareerPlayerRow,
-  type ShuffleCareerPlayerRow,
   type ShufflePlayerCard,
 } from "@/lib/home/shuffle-career-player-map"
 import { getServerAuth } from "@/lib/auth/server-session"
@@ -27,7 +26,7 @@ export async function fetchShuffleCareerPlayer(): Promise<FetchShuffleCareerPlay
     return { ok: false, error: "Could not load a player. Try again." }
   }
 
-  const row = (data as ShuffleCareerPlayerRow[] | null)?.[0]
+  const row = data?.[0]
   if (!row) {
     return { ok: true, player: null }
   }

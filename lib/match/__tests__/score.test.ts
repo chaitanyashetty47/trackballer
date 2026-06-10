@@ -24,11 +24,11 @@ function scoreFixture(overrides: Partial<MatchScoreFixture> = {}): MatchScoreFix
 }
 
 describe("formatMatchScore", () => {
-  it("shows kickoff time and NS for upcoming fixtures", () => {
+  it("shows kickoff time and Yet to start for upcoming fixtures", () => {
     const kickoff_at = "2026-06-15T18:00:00.000Z"
     const result = formatMatchScore(scoreFixture({ status_short: "NS", kickoff_at }))
 
-    expect(result.statusLabel).toBe("NS")
+    expect(result.statusLabel).toBe("Yet to start")
     expect(result.isLive).toBe(false)
     expect(result.scoreline).toBe(
       new Intl.DateTimeFormat("en-GB", {

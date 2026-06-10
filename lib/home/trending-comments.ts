@@ -1,6 +1,5 @@
 import { cache } from "react"
 
-import { formatPlayerDisplayName } from "@/lib/player/display-name"
 import { createClient } from "@/lib/supabase/server"
 
 import { sevenDaysAgoIso } from "./dates"
@@ -14,11 +13,14 @@ const COMMENT_SELECT = `
   score,
   upvote_count,
   created_at,
+  user_id,
   profile:profiles!comments_user_id_fkey(
+    username,
     display_name,
-    favourite_club:teams!profiles_favourite_club_id_fkey(logo_url)
+    favourite_club:teams!profiles_favourite_club_id_fkey(id, name, logo_url),
+    favourite_national_team:teams!profiles_favourite_national_team_id_fkey(id, name, logo_url)
   ),
-  player:players!comments_player_id_fkey(id, name, firstname, lastname)
+  player:players!comments_player_id_fkey(id, name, photo_url)
 `
 
 type CommentRow = {
@@ -27,15 +29,17 @@ type CommentRow = {
   score: number
   upvote_count: number
   created_at: string
+  user_id: string
   profile: {
+    username: string | null
     display_name: string
-    favourite_club: { logo_url: string | null } | null
+    favourite_club: { id: number; name: string; logo_url: string | null } | null
+    favourite_national_team: { id: number; name: string; logo_url: string | null } | null
   } | null
   player: {
     id: number
     name: string
-    firstname: string | null
-    lastname: string | null
+    photo_url: string | null
   } | null
 }
 
@@ -48,10 +52,14 @@ function mapCommentRow(row: CommentRow): TrendingCommentCard | null {
     score: row.score,
     upvoteCount: row.upvote_count,
     createdAt: row.created_at,
-    authorName: row.profile?.display_name ?? "user",
-    authorClubLogoUrl: row.profile?.favourite_club?.logo_url ?? null,
+    authorUserId: row.user_id,
+    authorUsername: row.profile?.username ?? null,
+    authorDisplayName: row.profile?.display_name ?? "user",
+    authorClub: row.profile?.favourite_club ?? null,
+    authorNationalTeam: row.profile?.favourite_national_team ?? null,
     playerId: row.player.id,
-    playerName: formatPlayerDisplayName(row.player.firstname, row.player.lastname, row.player.name),
+    playerName: row.player.name,
+    playerPhotoUrl: row.player.photo_url,
   }
 }
 

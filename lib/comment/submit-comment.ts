@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { normalizeCommentRow } from "@/lib/comment/normalize"
 import { requireServerAuth } from "@/lib/auth/server-session"
 import { createClient } from "@/lib/supabase/server"
+import { COMMENT_PROFILE_SELECT } from "./profile-select"
 import {
   submitCommentSchema,
   deleteCommentSchema,
@@ -11,14 +12,6 @@ import {
   type SubmitCommentInput,
   type DeleteCommentInput,
 } from "./types"
-
-const PROFILE_SELECT = `
-  id,
-  username,
-  display_name,
-  avatar_url,
-  favourite_club:teams!profiles_favourite_club_id_fkey(id, name, logo_url)
-`
 
 export type SubmitCommentResult =
   | { ok: true; comment: CommentWithProfile }
@@ -74,7 +67,7 @@ export async function submitComment(input: unknown): Promise<SubmitCommentResult
     .select(
       `
       *,
-      profile:profiles!comments_user_id_fkey(${PROFILE_SELECT})
+      profile:profiles!comments_user_id_fkey(${COMMENT_PROFILE_SELECT})
     `,
     )
     .single()

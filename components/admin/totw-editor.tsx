@@ -10,6 +10,7 @@ import {
   type SlotAssignment,
 } from "@/components/admin/formation-pitch-picker"
 import { PlayerSearchPicker } from "@/components/admin/player-search-picker"
+import { OptionMenuSelect } from "@/components/ui/option-menu-select"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -228,28 +229,28 @@ export function TotwEditor({
           <label htmlFor="totw-round" className="text-sm font-medium">
             Stage
           </label>
-          <select
-            id="totw-round"
+          <OptionMenuSelect
             value={roundId}
-            onChange={(e) => handleRoundChange(e.target.value)}
-            className="flex h-9 w-full rounded-lg border border-border bg-background px-3 text-sm"
+            onValueChange={handleRoundChange}
             disabled={pending}
-          >
-            {rounds.map((r) => {
-              const draft = draftsByRound.get(r.id)
-              const suffix = draft
-                ? featuredTotwId === draft.id
-                  ? " · live on site"
-                  : " · saved"
-                : ""
-              return (
-                <option key={r.id} value={String(r.id)}>
-                  {r.name}
-                  {suffix}
-                </option>
-              )
-            })}
-          </select>
+            groups={[
+              {
+                options: rounds.map((r) => {
+                  const draft = draftsByRound.get(r.id)
+                  const suffix = draft
+                    ? featuredTotwId === draft.id
+                      ? " · live on site"
+                      : " · saved"
+                    : ""
+                  return {
+                    value: String(r.id),
+                    label: `${r.name}${suffix}`,
+                  }
+                }),
+              },
+            ]}
+            ariaLabel="Stage"
+          />
         </div>
         <div className="flex flex-col gap-1.5">
           <label htmlFor="totw-title" className="text-sm font-medium">

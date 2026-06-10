@@ -5,6 +5,7 @@ import { useState, useTransition } from "react"
 
 import { PlayerSearchPicker } from "@/components/admin/player-search-picker"
 import { Button } from "@/components/ui/button"
+import { OptionMenuSelect } from "@/components/ui/option-menu-select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { SearchCombobox } from "@/components/ui/search-combobox"
@@ -162,20 +163,21 @@ export function CatalogFixForm({ clubOptions, positions }: CatalogFixFormProps) 
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="catalog-position">Position</Label>
-              <select
-                id="catalog-position"
+              <OptionMenuSelect
                 value={primaryPosition}
-                onChange={(e) => setPrimaryPosition(e.target.value)}
-                className={selectClass}
+                onValueChange={setPrimaryPosition}
                 disabled={pending}
-              >
-                <option value="">Not set</option>
-                {positions.map((pos) => (
-                  <option key={pos} value={pos}>
-                    {pos}
-                  </option>
-                ))}
-              </select>
+                groups={[
+                  {
+                    options: [
+                      { value: "", label: "Not set" },
+                      ...positions.map((pos) => ({ value: pos, label: pos })),
+                    ],
+                  },
+                ]}
+                ariaLabel="Position"
+                placeholder="Not set"
+              />
             </div>
           </div>
 

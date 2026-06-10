@@ -1,6 +1,7 @@
 import Link from "next/link"
 
 import { MatchRow } from "@/components/match-row"
+import { MatchRowList } from "@/components/match/match-row-list"
 import type { FixtureWithTeams } from "@/lib/catalog/types"
 
 type LatestMatchesProps = {
@@ -25,11 +26,11 @@ export function LatestMatches({ fixtures }: LatestMatchesProps) {
           No recent matches yet.
         </p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border bg-card lg:sticky lg:top-20">
+        <MatchRowList className="overflow-hidden rounded-lg border border-border bg-card lg:sticky lg:top-20">
           {fixtures.map((fixture) => (
-            <MatchRow key={fixture.id} fixture={fixture} showContext />
+            <MatchRow key={fixture.id} fixture={fixture} aligned showContext />
           ))}
-        </div>
+        </MatchRowList>
       )}
     </section>
   )
