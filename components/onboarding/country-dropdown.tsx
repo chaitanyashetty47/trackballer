@@ -157,7 +157,7 @@ const CountryDropdownComponent = (
                 className="h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
               />
             </div>
-            <Combobox.Empty className="px-3 py-4 text-sm text-muted-foreground">
+            <Combobox.Empty className="hidden px-3 py-4 text-sm text-muted-foreground in-data-empty:block">
               No country found.
             </Combobox.Empty>
             <Combobox.List className="max-h-52 overflow-y-auto overscroll-contain p-1 outline-none sm:max-h-64">

@@ -182,7 +182,7 @@ export function OnboardingWizard({ options }: OnboardingWizardProps) {
             disabled={isPending}
             className="flex-1"
           >
-            {isPending ? "Saving…" : "Finish — go to home"}
+            {isPending ? "Saving…" : "Finish - go to home"}
           </Button>
         )}
       </div>

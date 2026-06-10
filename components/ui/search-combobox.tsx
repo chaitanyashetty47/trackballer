@@ -56,7 +56,7 @@ export function SearchCombobox({
         </label>
         <Combobox.InputGroup
           className={cn(
-            "relative flex h-10 w-full items-center gap-2 rounded-lg border border-border bg-background",
+            "relative flex h-10 w-full cursor-pointer items-center gap-2 rounded-lg border border-border bg-background",
             "focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50",
             disabled && "pointer-events-none opacity-50",
           )}
@@ -102,7 +102,7 @@ export function SearchCombobox({
               "origin-[var(--transform-origin)]",
             )}
           >
-            <Combobox.Empty className="px-3 py-4 text-sm text-muted-foreground">
+            <Combobox.Empty className="hidden px-3 py-4 text-sm text-muted-foreground in-data-empty:block">
               {emptyMessage}
             </Combobox.Empty>
             <Combobox.List className="max-h-72 overflow-y-auto overscroll-contain p-1 outline-none">
