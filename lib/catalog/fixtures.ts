@@ -3,6 +3,7 @@ import { cache } from "react"
 import { TERMINAL_STATUSES } from "@/lib/catalog-sync/constants"
 import { getCatalogLeagueId, getCatalogSeasonYear } from "@/lib/catalog/config"
 import type {
+  FixtureView,
   FixtureWithTeams,
   GetFixturesOptions,
   RoundRow,
@@ -36,6 +37,7 @@ export const FIXTURE_TEAM_SELECT = `
 `
 
 const TERMINAL_LIST = [...TERMINAL_STATUSES]
+const NOT_STARTED_STATUSES = ["NS", "TBD"] as const
 
 export function mapFixtureRow(row: unknown): FixtureWithTeams | null {
   if (!row || typeof row !== "object") return null
@@ -53,6 +55,10 @@ async function fetchFixtures(
     kickoffOrder: "asc" | "desc"
     terminalOnly?: boolean
     upcomingOnly?: boolean
+    /** Kickoff not reached — NS and TBD only. */
+    notStartedOnly?: boolean
+    /** Live or finished — anything except NS and TBD. */
+    startedOnly?: boolean
   },
 ): Promise<FixtureWithTeams[]> {
   const supabase = await createClient()
@@ -72,6 +78,13 @@ async function fetchFixtures(
   }
   if (options.upcomingOnly) {
     const quoted = TERMINAL_LIST.map((s) => `"${s}"`).join(",")
+    query = query.not("status_short", "in", `(${quoted})`)
+  }
+  if (options.notStartedOnly) {
+    query = query.in("status_short", [...NOT_STARTED_STATUSES])
+  }
+  if (options.startedOnly) {
+    const quoted = NOT_STARTED_STATUSES.map((s) => `"${s}"`).join(",")
     query = query.not("status_short", "in", `(${quoted})`)
   }
 
@@ -149,7 +162,23 @@ export const getUpcomingFixtures = cache(
       roundName: options?.roundName,
       limit: options?.limit ?? 20,
       kickoffOrder: "asc",
-      upcomingOnly: true,
+      notStartedOnly: true,
+    })
+  },
+)
+
+/** Most recent live or finished matches — for home sidebar recent strip. */
+export const getRecentLiveAndResults = cache(
+  async (
+    seasonId: number,
+    options?: { roundName?: string; limit?: number },
+  ): Promise<FixtureWithTeams[]> => {
+    return fetchFixtures({
+      seasonId,
+      roundName: options?.roundName,
+      limit: options?.limit ?? 3,
+      kickoffOrder: "desc",
+      startedOnly: true,
     })
   },
 )
@@ -166,6 +195,67 @@ export const getLatestResults = cache(
       kickoffOrder: "desc",
       terminalOnly: true,
     })
+  },
+)
+
+/**
+ * All fixtures for one round, sliced by view. Upcoming runs earliest first
+ * (next kickoff on top); finished runs latest first (most recent result on top).
+ * No row cap — a World Cup group round holds 24 matches.
+ */
+export const getRoundFixtures = cache(
+  async (
+    seasonId: number,
+    roundName: string,
+    options?: { view?: FixtureView },
+  ): Promise<FixtureWithTeams[]> => {
+    if (options?.view === "finished") {
+      return fetchFixtures({
+        seasonId,
+        roundName,
+        kickoffOrder: "desc",
+        terminalOnly: true,
+      })
+    }
+
+    if (options?.view === "upcoming") {
+      return fetchFixtures({
+        seasonId,
+        roundName,
+        kickoffOrder: "asc",
+        upcomingOnly: true,
+      })
+    }
+
+    return fetchFixtures({ seasonId, roundName, kickoffOrder: "asc" })
+  },
+)
+
+/**
+ * Round to open by default: the one holding the next match still to be played.
+ * Before kickoff this is the first round; mid-tournament it follows the schedule.
+ * Falls back to null so callers can pick the first round in the list.
+ */
+export const getCurrentRoundName = cache(
+  async (seasonId: number): Promise<string | null> => {
+    const supabase = await createClient()
+    const quoted = TERMINAL_LIST.map((s) => `"${s}"`).join(",")
+
+    const { data, error } = await supabase
+      .from("fixtures")
+      .select("round_name")
+      .eq("season_id", seasonId)
+      .not("status_short", "in", `(${quoted})`)
+      .order("kickoff_at", { ascending: true })
+      .limit(1)
+      .maybeSingle()
+
+    if (error) {
+      console.error("getCurrentRoundName failed:", error.message)
+      return null
+    }
+
+    return data?.round_name ?? null
   },
 )
 

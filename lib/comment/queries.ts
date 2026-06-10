@@ -5,20 +5,13 @@ import {
   collectCommentIds,
   normalizeCommentRow,
 } from "./normalize"
+import { COMMENT_PROFILE_SELECT } from "./profile-select"
 import { pruneDeletedComments } from "./comment-tree"
 import type { CommentWithProfile } from "./types"
 
-const PROFILE_SELECT = `
-  id,
-  username,
-  display_name,
-  avatar_url,
-  favourite_club:teams!profiles_favourite_club_id_fkey(id, name, logo_url)
-`
-
 const COMMENT_WITH_PROFILE = `
   *,
-  profile:profiles!comments_user_id_fkey(${PROFILE_SELECT})
+  profile:profiles!comments_user_id_fkey(${COMMENT_PROFILE_SELECT})
 `
 
 export async function getComments(

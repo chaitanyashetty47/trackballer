@@ -31,6 +31,7 @@ function rawComment(
       display_name: "fan1",
       avatar_url: null,
       favourite_club: null,
+      favourite_national_team: null,
     },
     ...overrides,
   }

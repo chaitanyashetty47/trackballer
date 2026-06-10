@@ -19,3 +19,6 @@ export type GetFixturesOptions = {
   statusShort?: string
   limit?: number
 }
+
+/** Which slice of a round to show: matches still to come, or matches already played. */
+export type FixtureView = "upcoming" | "finished"

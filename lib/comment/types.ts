@@ -12,6 +12,7 @@ export type CommentProfile = {
   display_name: string
   avatar_url: string | null
   favourite_club: Team | null
+  favourite_national_team: Team | null
 }
 
 export type CommentWithProfile = {

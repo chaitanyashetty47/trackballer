@@ -1,5 +1,6 @@
 "use client"
 
+import { OptionMenuSelect } from "@/components/ui/option-menu-select"
 import {
   FORMATION_TEMPLATES,
   type FormationId,
@@ -45,17 +46,19 @@ export function FormationSelect({
   onChange: (id: FormationId) => void
 }) {
   return (
-    <select
+    <OptionMenuSelect
       value={value}
-      onChange={(e) => onChange(e.target.value as FormationId)}
-      className="flex h-9 w-full rounded-lg border border-border bg-background px-3 text-sm"
-    >
-      {FORMATION_TEMPLATES.map((f) => (
-        <option key={f.id} value={f.id}>
-          {f.label}
-        </option>
-      ))}
-    </select>
+      onValueChange={(val) => onChange(val as FormationId)}
+      groups={[
+        {
+          options: FORMATION_TEMPLATES.map((f) => ({
+            value: f.id,
+            label: f.label,
+          })),
+        },
+      ]}
+      ariaLabel="Select formation"
+    />
   )
 }
 

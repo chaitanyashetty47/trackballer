@@ -69,6 +69,62 @@ export function formatMatchKickoffLocal(iso: string): string {
   )
 }
 
+/** Viewer-local kickoff time only — e.g. "12:30 am" for fixture list rows. */
+export function formatKickoffTimeLocal(iso: string): string {
+  return new Intl.DateTimeFormat(KICKOFF_LOCALE, {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(new Date(iso))
+}
+
+/** Viewer-local kickoff day under the time — e.g. "Fri, 12 Jun". */
+export function formatKickoffDateLocalShort(iso: string): string {
+  return new Intl.DateTimeFormat(KICKOFF_LOCALE, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(new Date(iso))
+}
+
+/** Viewer-local date heading for fixture groups — e.g. "Friday, 12 June". */
+export function formatMatchKickoffDateHeadingLocal(iso: string): string {
+  return new Intl.DateTimeFormat(KICKOFF_LOCALE, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(new Date(iso))
+}
+
+/** Stable local calendar key for grouping fixtures by the viewer's day. */
+export function kickoffLocalDateKey(iso: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(iso))
+}
+
+/** UTC date heading for fixture groups — e.g. "Friday, 12 June". */
+export function formatMatchKickoffDateHeading(iso: string): string {
+  return new Intl.DateTimeFormat(KICKOFF_LOCALE, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: KICKOFF_TIME_ZONE,
+  }).format(new Date(iso))
+}
+
+/** UTC kickoff day — e.g. "Thu 11 Jun". Stable for server-rendered list rows. */
+export function formatMatchKickoffDate(iso: string): string {
+  return new Intl.DateTimeFormat(KICKOFF_LOCALE, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: KICKOFF_TIME_ZONE,
+  }).format(new Date(iso))
+}
+
 /** UTC kickoff line — stable for server render and compact list rows. */
 export function formatMatchKickoffDateTime(iso: string): string {
   return new Intl.DateTimeFormat(KICKOFF_LOCALE, {
@@ -83,7 +139,7 @@ export function formatMatchScore(fixture: MatchScoreFixture): MatchScoreDisplay 
   if (UPCOMING.has(status)) {
     return {
       scoreline: formatKickoffTime(fixture.kickoff_at),
-      statusLabel: status,
+      statusLabel: status === "NS" ? "Yet to start" : status,
       isLive: false,
     }
   }

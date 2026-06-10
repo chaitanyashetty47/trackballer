@@ -18,6 +18,7 @@ import { HydrationGate } from "@/components/hydration-gate"
 import { SearchCombobox } from "@/components/ui/search-combobox"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { OptionMenuSelect } from "@/components/ui/option-menu-select"
 import { Label } from "@/components/ui/label"
 import { buildPlayersBrowseHref, normalizeSearchQuery } from "@/lib/search/query"
 import {
@@ -178,20 +179,20 @@ export function PlayersFiltersForm({
 
       <div className="space-y-1.5">
         <Label htmlFor={id("position")}>Position</Label>
-        <select
-          id={id("position")}
-          name="position"
+        <OptionMenuSelect
           value={position}
-          onChange={(event) => setPosition(event.target.value)}
-          className={selectClass}
-        >
-          <option value="">Any</option>
-          {options.positions.map((pos) => (
-            <option key={pos} value={pos}>
-              {pos}
-            </option>
-          ))}
-        </select>
+          onValueChange={setPosition}
+          groups={[
+            {
+              options: [
+                { value: "", label: "Any" },
+                ...options.positions.map((pos) => ({ value: pos, label: pos })),
+              ],
+            },
+          ]}
+          ariaLabel="Filter by position"
+          placeholder="Any"
+        />
       </div>
 
       <SearchCombobox

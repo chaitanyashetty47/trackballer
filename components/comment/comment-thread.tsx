@@ -57,6 +57,7 @@ function buildPendingComment(
       display_name: "You",
       avatar_url: null,
       favourite_club: null,
+      favourite_national_team: null,
     },
     replies: [],
     isPending: true,

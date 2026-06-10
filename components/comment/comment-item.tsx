@@ -1,9 +1,8 @@
 "use client"
 
-import Image from "next/image"
-import Link from "next/link"
 import { useState } from "react"
 import { CommentComposer } from "./comment-composer"
+import { CommentFavouriteCrests } from "./comment-favourite-crests"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -13,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { CommentAuthorLink } from "@/components/comment/comment-author-link"
 import { CommentTime } from "@/components/comment/comment-time"
 import type { CommentDisplay } from "@/lib/comment/types"
 
@@ -44,11 +44,6 @@ export function CommentItem({
   const isPending = comment.isPending === true
   const isDeletedStub = comment.is_deleted
   const isOwner = currentUserId === comment.user_id
-  const handle =
-    comment.profile?.username ?? comment.profile?.display_name ?? "user"
-  const profileHref = comment.profile?.username
-    ? `/u/${comment.profile.username}`
-    : null
 
   function confirmDelete() {
     onDelete(comment.id)
@@ -98,25 +93,16 @@ export function CommentItem({
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {profileHref ? (
-              <Link
-                href={profileHref}
-                className="font-medium text-foreground hover:underline"
-              >
-                @{handle}
-              </Link>
-            ) : (
-              <span className="font-medium text-foreground">@{handle}</span>
-            )}
-            {comment.profile?.favourite_club?.logo_url && (
-              <Image
-                src={comment.profile.favourite_club.logo_url}
-                alt={comment.profile.favourite_club.name}
-                width={16}
-                height={16}
-                className="h-4 w-4"
-              />
-            )}
+            <CommentAuthorLink
+              currentUserId={currentUserId}
+              authorUserId={comment.user_id}
+              username={comment.profile?.username}
+              displayName={comment.profile?.display_name}
+            />
+            <CommentFavouriteCrests
+              club={comment.profile?.favourite_club}
+              nationalTeam={comment.profile?.favourite_national_team}
+            />
             <CommentTime dateString={comment.created_at} pending={isPending} />
           </div>
 
