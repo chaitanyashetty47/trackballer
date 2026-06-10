@@ -1228,6 +1228,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_shuffle_career_player: {
+        Args: never
+        Returns: {
+          club_name: string | null
+          display_score: number
+          firstname: string | null
+          id: number
+          lastname: string | null
+          name: string
+          photo_url: string
+          primary_position: string | null
+          tier: string
+        }[]
+      }
       is_admin: { Args: never; Returns: boolean }
       rating_half_step_check: { Args: { p_value: number }; Returns: boolean }
       recompute_player_career_aggregate: {
