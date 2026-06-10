@@ -28,7 +28,10 @@ export type CommentWithProfile = {
   player_id: number | null
   fixture_id: number | null
   target_type: string
+  thread_root_id: number | null
+  thread_depth: number
   profile: CommentProfile | null
+  /** Flat chronological descendants under this top-level comment. */
   replies: CommentWithProfile[]
 }
 

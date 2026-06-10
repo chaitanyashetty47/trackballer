@@ -13,6 +13,8 @@ type RawCommentRow = {
   player_id: number | null
   fixture_id: number | null
   target_type: string
+  thread_root_id?: number | null
+  thread_depth?: number
   profile?: CommentWithProfile["profile"] | null
 }
 
@@ -30,6 +32,8 @@ export function normalizeCommentRow(row: RawCommentRow): CommentWithProfile {
     player_id: row.player_id,
     fixture_id: row.fixture_id,
     target_type: row.target_type,
+    thread_root_id: row.thread_root_id ?? null,
+    thread_depth: row.thread_depth ?? 0,
     profile: row.profile ?? null,
     replies: [],
   }

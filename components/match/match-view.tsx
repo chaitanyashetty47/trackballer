@@ -9,14 +9,13 @@ import { PenaltyShootoutSection } from "@/components/match/penalty-shootout-sect
 import { MatchRatingUI } from "@/components/rating/match-rating-ui"
 import { formatMatchHeroScore } from "@/lib/match/hero-score"
 import type { MatchDetail, MatchLineupPlayer } from "@/lib/match/types"
-import type { CommentWithProfile } from "@/lib/comment/types"
+import type { CommentsPageData } from "@/lib/comment/queries"
 import { submitMatchRating } from "@/lib/rating/submit-match-rating"
 
 type MatchViewProps = {
   detail: MatchDetail
   isLoggedIn: boolean
-  comments?: CommentWithProfile[]
-  userVotes?: Record<number, 1 | -1>
+  commentsPage?: CommentsPageData
   currentUserId?: string | null
 }
 
@@ -41,8 +40,7 @@ function findRateableIndex(queue: MatchLineupPlayer[], playerId: number): number
 export function MatchView({
   detail: initialDetail,
   isLoggedIn,
-  comments = [],
-  userVotes = {},
+  commentsPage,
   currentUserId = null,
 }: MatchViewProps) {
   const router = useRouter()
@@ -186,8 +184,7 @@ export function MatchView({
         canRate={canRate}
         ratingsLocked={ratingsLocked}
         isLoggedIn={isLoggedIn}
-        comments={comments}
-        userVotes={userVotes}
+        commentsPage={commentsPage}
         currentUserId={currentUserId}
         errorMessage={errorMessage}
         onRateAll={handleRateAll}

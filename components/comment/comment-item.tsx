@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/dialog"
 import { CommentAuthorLink } from "@/components/comment/comment-author-link"
 import { CommentTime } from "@/components/comment/comment-time"
+import { getThreadIndent } from "@/lib/comment/comment-tree"
+import { MAX_THREAD_DEPTH } from "@/lib/comment/pagination"
 import type { CommentDisplay } from "@/lib/comment/types"
 
 interface CommentItemProps {
@@ -21,8 +23,7 @@ interface CommentItemProps {
   userVote: 1 | -1 | null
   isLoggedIn: boolean
   currentUserId: string | null
-  depth?: 0 | 1
-  userVotesMap: Record<number, 1 | -1>
+  depth?: number
   onVote: (commentId: number, value: 1 | -1) => void
   onDelete: (commentId: number) => void
   onPostReply: (body: string, parentId: number) => Promise<{ ok: boolean; error?: string }>
@@ -34,7 +35,6 @@ export function CommentItem({
   isLoggedIn,
   currentUserId,
   depth = 0,
-  userVotesMap,
   onVote,
   onDelete,
   onPostReply,
@@ -44,6 +44,7 @@ export function CommentItem({
   const isPending = comment.isPending === true
   const isDeletedStub = comment.is_deleted
   const isOwner = currentUserId === comment.user_id
+  const canReply = comment.thread_depth < MAX_THREAD_DEPTH
 
   function confirmDelete() {
     onDelete(comment.id)
@@ -53,9 +54,8 @@ export function CommentItem({
   return (
     <>
       <div
-        className={`flex gap-3 transition-opacity ${depth === 1 ? "ml-10" : ""} ${
-          isPending ? "opacity-50" : ""
-        }`}
+        className={`flex gap-3 transition-opacity ${isPending ? "opacity-50" : ""}`}
+        style={depth > 0 ? { marginLeft: getThreadIndent(depth) } : undefined}
       >
         <div className="flex flex-col items-center gap-1 pt-1">
           {!isDeletedStub ? (
@@ -98,6 +98,7 @@ export function CommentItem({
               authorUserId={comment.user_id}
               username={comment.profile?.username}
               displayName={comment.profile?.display_name}
+              avatarUrl={comment.profile?.avatar_url}
             />
             <CommentFavouriteCrests
               club={comment.profile?.favourite_club}
@@ -114,9 +115,9 @@ export function CommentItem({
             )}
           </p>
 
-          {!isDeletedStub && !isPending && (
+          {!isDeletedStub && !isPending && (canReply || isOwner) && (
             <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
-              {depth === 0 && (
+              {canReply && (
                 <button
                   type="button"
                   onClick={() => setReplyOpen(!replyOpen)}
@@ -137,7 +138,7 @@ export function CommentItem({
             </div>
           )}
 
-          {replyOpen && depth === 0 && (
+          {replyOpen && canReply && !isDeletedStub && !isPending && (
             <div className="mt-3">
               <CommentComposer
                 isLoggedIn={isLoggedIn}
@@ -150,25 +151,6 @@ export function CommentItem({
                   return result
                 }}
               />
-            </div>
-          )}
-
-          {depth === 0 && comment.replies.length > 0 && (
-            <div className="mt-4 space-y-4">
-              {comment.replies.map((reply) => (
-                <CommentItem
-                  key={reply.id}
-                  comment={reply}
-                  userVote={userVotesMap[reply.id] ?? null}
-                  isLoggedIn={isLoggedIn}
-                  currentUserId={currentUserId}
-                  depth={1}
-                  userVotesMap={userVotesMap}
-                  onVote={onVote}
-                  onDelete={onDelete}
-                  onPostReply={onPostReply}
-                />
-              ))}
             </div>
           )}
         </div>

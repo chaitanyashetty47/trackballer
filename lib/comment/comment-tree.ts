@@ -1,23 +1,66 @@
+import { MAX_THREAD_INDENT_DEPTH } from "@/lib/comment/pagination"
+
 import type { CommentDisplay } from "./types"
 import type { VoteTransition } from "./optimistic-vote"
 
-function patchComment(
-  comment: CommentDisplay,
+function sortThreadChronologically(replies: CommentDisplay[]): CommentDisplay[] {
+  return [...replies].sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+  )
+}
+
+function findCommentInForest(
+  comments: CommentDisplay[],
+  commentId: number,
+): CommentDisplay | null {
+  for (const root of comments) {
+    if (root.id === commentId) return root
+    const reply = root.replies.find((row) => row.id === commentId)
+    if (reply) return reply
+  }
+  return null
+}
+
+function threadRootIdForParent(
+  comments: CommentDisplay[],
+  parentId: number,
+): number | null {
+  const parent = findCommentInForest(comments, parentId)
+  if (!parent) return null
+  return parent.thread_root_id ?? parent.id
+}
+
+function hasDirectChildrenInThread(
+  replies: CommentDisplay[],
+  commentId: number,
+): boolean {
+  return replies.some((reply) => reply.parent_id === commentId)
+}
+
+function patchRootComment(
+  root: CommentDisplay,
   commentId: number,
   patch: (node: CommentDisplay) => CommentDisplay,
 ): CommentDisplay {
-  if (comment.id === commentId) {
-    return patch(comment)
+  if (root.id === commentId) {
+    return patch(root)
   }
 
-  if (comment.replies.length === 0) {
-    return comment
+  if (root.replies.length === 0) {
+    return root
   }
 
   return {
-    ...comment,
-    replies: comment.replies.map((reply) => patchComment(reply, commentId, patch)),
+    ...root,
+    replies: root.replies.map((reply) =>
+      reply.id === commentId ? patch(reply) : reply,
+    ),
   }
+}
+
+export function getThreadIndent(depth: number): string {
+  const capped = Math.min(Math.max(depth, 0), MAX_THREAD_INDENT_DEPTH)
+  return `${capped * 2.5}rem`
 }
 
 export function updateVoteInTree(
@@ -25,8 +68,8 @@ export function updateVoteInTree(
   commentId: number,
   transition: VoteTransition,
 ): CommentDisplay[] {
-  return comments.map((comment) =>
-    patchComment(comment, commentId, (node) => ({
+  return comments.map((root) =>
+    patchRootComment(root, commentId, (node) => ({
       ...node,
       score: node.score + transition.scoreDelta,
       upvote_count: Math.max(0, node.upvote_count + transition.upvoteDelta),
@@ -39,8 +82,8 @@ export function softDeleteInTree(
   comments: CommentDisplay[],
   commentId: number,
 ): CommentDisplay[] {
-  return comments.map((comment) =>
-    patchComment(comment, commentId, (node) => ({
+  return comments.map((root) =>
+    patchRootComment(root, commentId, (node) => ({
       ...node,
       is_deleted: true,
       body: node.body,
@@ -56,35 +99,50 @@ export function deleteCommentInTree(
   comments: CommentDisplay[],
   commentId: number,
 ): CommentDisplay[] {
-  const next = comments.map((comment) => {
-    if (comment.id === commentId) {
-      const visibleReplies = comment.replies.filter((reply) => !reply.is_deleted)
-      if (visibleReplies.length === 0) {
-        return null
+  const next = comments
+    .map((root) => {
+      if (root.id === commentId) {
+        const visibleReplies = root.replies.filter((reply) => !reply.is_deleted)
+        if (visibleReplies.length === 0) {
+          return null
+        }
+        return { ...root, is_deleted: true, replies: visibleReplies }
       }
-      return { ...comment, is_deleted: true, replies: visibleReplies }
-    }
 
-    const replyIdx = comment.replies.findIndex((reply) => reply.id === commentId)
-    if (replyIdx < 0) {
-      return comment
-    }
+      const replyIdx = root.replies.findIndex((reply) => reply.id === commentId)
+      if (replyIdx < 0) {
+        return root
+      }
 
-    const replies = comment.replies.filter((reply) => reply.id !== commentId)
-    return { ...comment, replies }
-  })
+      if (hasDirectChildrenInThread(root.replies, commentId)) {
+        return {
+          ...root,
+          replies: root.replies.map((reply) =>
+            reply.id === commentId ? { ...reply, is_deleted: true } : reply,
+          ),
+        }
+      }
 
-  return next.filter((comment): comment is CommentDisplay => comment != null)
+      return {
+        ...root,
+        replies: root.replies.filter((reply) => reply.id !== commentId),
+      }
+    })
+    .filter((comment): comment is CommentDisplay => comment != null)
+
+  return next
 }
 
 /** Hide deleted comments unless they still anchor visible replies. */
 export function pruneDeletedComments(comments: CommentDisplay[]): CommentDisplay[] {
   return comments
-    .map((comment) => ({
-      ...comment,
-      replies: comment.replies.filter((reply) => !reply.is_deleted),
+    .map((root) => ({
+      ...root,
+      replies: root.replies.filter(
+        (reply) => !reply.is_deleted || hasDirectChildrenInThread(root.replies, reply.id),
+      ),
     }))
-    .filter((comment) => !comment.is_deleted || comment.replies.length > 0)
+    .filter((root) => !root.is_deleted || root.replies.length > 0)
 }
 
 export function removeCommentById(
@@ -92,10 +150,10 @@ export function removeCommentById(
   commentId: number,
 ): CommentDisplay[] {
   return comments
-    .filter((comment) => comment.id !== commentId)
-    .map((comment) => ({
-      ...comment,
-      replies: comment.replies.filter((reply) => reply.id !== commentId),
+    .filter((root) => root.id !== commentId)
+    .map((root) => ({
+      ...root,
+      replies: root.replies.filter((reply) => reply.id !== commentId),
     }))
 }
 
@@ -103,18 +161,14 @@ export function commentExistsInTree(
   comments: CommentDisplay[],
   commentId: number,
 ): boolean {
-  for (const comment of comments) {
-    if (comment.id === commentId) return true
-    if (comment.replies.some((reply) => reply.id === commentId)) return true
-  }
-  return false
+  return findCommentInForest(comments, commentId) != null
 }
 
 export function collectPendingComments(comments: CommentDisplay[]): CommentDisplay[] {
   const pending: CommentDisplay[] = []
-  for (const comment of comments) {
-    if (comment.isPending || comment.id < 0) pending.push(comment)
-    for (const reply of comment.replies) {
+  for (const root of comments) {
+    if (root.isPending || root.id < 0) pending.push(root)
+    for (const reply of root.replies) {
       if (reply.isPending || reply.id < 0) pending.push(reply)
     }
   }
@@ -134,9 +188,9 @@ function findMatchingSavedComment(
   comments: CommentDisplay[],
   pending: CommentDisplay,
 ): CommentDisplay | null {
-  for (const comment of comments) {
-    if (commentsMatchPending(pending, comment)) return comment
-    for (const reply of comment.replies) {
+  for (const root of comments) {
+    if (commentsMatchPending(pending, root)) return root
+    for (const reply of root.replies) {
       if (commentsMatchPending(pending, reply)) return reply
     }
   }
@@ -190,21 +244,91 @@ export function addCommentToTree(
   comment: CommentDisplay,
 ): CommentDisplay[] {
   if (comment.parent_id == null) {
-    return [comment, ...comments]
+    return [
+      {
+        ...comment,
+        thread_root_id: null,
+        thread_depth: 0,
+        replies: comment.replies ?? [],
+      },
+      ...comments,
+    ]
   }
 
-  return comments.map((parent) => {
-    if (parent.id !== comment.parent_id) {
-      return parent
-    }
+  const rootId =
+    comment.thread_root_id ?? threadRootIdForParent(comments, comment.parent_id)
+  if (!rootId) return comments
+
+  const parent = findCommentInForest(comments, comment.parent_id)
+  const resolvedDepth =
+    comment.thread_root_id != null
+      ? (comment.thread_depth ?? 0)
+      : (parent?.thread_depth ?? 0) + 1
+  const withThreadFields: CommentDisplay = {
+    ...comment,
+    thread_root_id: rootId,
+    thread_depth: resolvedDepth,
+  }
+
+  return comments.map((root) => {
+    if (root.id !== rootId) return root
     return {
-      ...parent,
-      replies: [...parent.replies, comment].sort(
-        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-      ),
+      ...root,
+      replies: sortThreadChronologically([...root.replies, withThreadFields]),
     }
   })
 }
+
+export function appendUniqueParents(
+  existing: CommentDisplay[],
+  incoming: CommentDisplay[],
+): CommentDisplay[] {
+  const seen = new Set(existing.map((comment) => comment.id))
+  const merged = [...existing]
+
+  for (const comment of incoming) {
+    if (seen.has(comment.id)) continue
+    seen.add(comment.id)
+    merged.push(comment)
+  }
+
+  return merged
+}
+
+export function appendThreadComments(
+  comments: CommentDisplay[],
+  threadRootId: number,
+  incoming: CommentDisplay[],
+): CommentDisplay[] {
+  if (incoming.length === 0) return comments
+
+  const seen = new Set<number>()
+  for (const root of comments) {
+    if (root.id !== threadRootId) continue
+    for (const reply of root.replies) {
+      seen.add(reply.id)
+    }
+  }
+
+  return comments.map((root) => {
+    if (root.id !== threadRootId) return root
+
+    const nextReplies = [...root.replies]
+    for (const reply of incoming) {
+      if (seen.has(reply.id)) continue
+      seen.add(reply.id)
+      nextReplies.push(reply)
+    }
+
+    return {
+      ...root,
+      replies: sortThreadChronologically(nextReplies),
+    }
+  })
+}
+
+/** @deprecated Use appendThreadComments */
+export const appendRepliesToParent = appendThreadComments
 
 export function sortComments(
   comments: CommentDisplay[],

@@ -26,14 +26,13 @@ export default async function MatchPage({ params }: PageProps) {
   const supabase = await createClient()
   const auth = await getServerAuth(supabase)
 
-  const { comments, userVotes } = await getComments("match", fixtureId, auth?.userId ?? null)
+  const commentsPage = await getComments("match", fixtureId, auth?.userId ?? null)
 
   return (
     <MatchView
       detail={detail}
       isLoggedIn={auth != null}
-      comments={comments}
-      userVotes={userVotes}
+      commentsPage={commentsPage}
       currentUserId={auth?.userId ?? null}
     />
   )
