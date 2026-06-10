@@ -1,3 +1,5 @@
+import { normalizeXAvatarUrl } from "@/lib/profile/normalize-x-avatar-url"
+
 export type AvatarSource = "google" | "x"
 
 export type ProfileAvatarFields = {
@@ -9,6 +11,10 @@ export type ProfileAvatarFields = {
 
 function isHttpsUrl(value: string | null | undefined): value is string {
   return typeof value === "string" && value.startsWith("https://")
+}
+
+function xAvatarUrl(value: string | null | undefined): string | null {
+  return normalizeXAvatarUrl(value)
 }
 
 export function defaultAvatarSource(fields: ProfileAvatarFields): AvatarSource {
@@ -26,7 +32,7 @@ export function resolveDisplayAvatar(fields: ProfileAvatarFields): string | null
   const source = fields.avatar_source ?? defaultAvatarSource(fields)
 
   if (source === "x" && isHttpsUrl(fields.x_avatar_url)) {
-    return fields.x_avatar_url
+    return xAvatarUrl(fields.x_avatar_url)
   }
   if (source === "google" && isHttpsUrl(fields.google_avatar_url)) {
     return fields.google_avatar_url
@@ -34,7 +40,7 @@ export function resolveDisplayAvatar(fields: ProfileAvatarFields): string | null
 
   return (
     fields.google_avatar_url ??
-    fields.x_avatar_url ??
+    xAvatarUrl(fields.x_avatar_url) ??
     fields.avatar_url ??
     null
   )

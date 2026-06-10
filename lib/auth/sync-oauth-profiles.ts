@@ -5,6 +5,7 @@ import {
   buildAvatarCacheUpdate,
   type AvatarSource,
 } from "@/lib/profile/display-avatar"
+import { normalizeXAvatarUrl } from "@/lib/profile/normalize-x-avatar-url"
 import { normalizeSocialHandle } from "@/lib/profile/validate-social-handles"
 import type { Database } from "@/lib/database.types"
 
@@ -15,6 +16,8 @@ function readHttpsAvatar(meta: Record<string, unknown>): string | null {
     (typeof meta.picture === "string" && meta.picture) ||
     (typeof meta.avatar_url === "string" && meta.avatar_url) ||
     (typeof meta.profile_image_url === "string" && meta.profile_image_url) ||
+    (typeof meta.profile_image_url_https === "string" &&
+      meta.profile_image_url_https) ||
     null
 
   return raw?.startsWith("https://") ? raw : null
@@ -55,9 +58,11 @@ function readXData(user: AuthUser): {
     ? normalizeSocialHandle("twitter", rawHandle)
     : { ok: true as const, handle: null }
 
+  const rawAvatar = readHttpsAvatar(meta)
+
   return {
     handle: normalized.ok ? normalized.handle : null,
-    avatarUrl: readHttpsAvatar(meta),
+    avatarUrl: rawAvatar ? normalizeXAvatarUrl(rawAvatar) : null,
   }
 }
 

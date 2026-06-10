@@ -1,6 +1,7 @@
 import { formatPlayerDisplayName } from "@/lib/player/display-name"
 import { getOnboardingOptions } from "@/lib/onboarding/options"
 import { resolveDisplayAvatar, type AvatarSource } from "@/lib/profile/display-avatar"
+import { normalizeXAvatarUrl } from "@/lib/profile/normalize-x-avatar-url"
 import { createClient } from "@/lib/supabase/server"
 
 import type {
@@ -46,7 +47,10 @@ function mapTeam(raw: unknown): ProfileTeam | null {
 function mapProfileRow(row: Record<string, unknown>): ProfileView {
   const googleAvatarUrl =
     typeof row.google_avatar_url === "string" ? row.google_avatar_url : null
-  const xAvatarUrl = typeof row.x_avatar_url === "string" ? row.x_avatar_url : null
+  const xAvatarUrl =
+    typeof row.x_avatar_url === "string"
+      ? normalizeXAvatarUrl(row.x_avatar_url)
+      : null
   const avatarSource =
     row.avatar_source === "google" || row.avatar_source === "x"
       ? (row.avatar_source as AvatarSource)

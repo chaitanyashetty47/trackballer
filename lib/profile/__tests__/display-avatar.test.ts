@@ -26,6 +26,16 @@ describe("resolveDisplayAvatar", () => {
     ).toBe("https://x.test/b.jpg")
   })
 
+  it("strips _normal from stored x avatars on read", () => {
+    expect(
+      resolveDisplayAvatar({
+        avatar_source: "x",
+        x_avatar_url:
+          "https://pbs.twimg.com/profile_images/1/avatar_normal.jpg",
+      }),
+    ).toBe("https://pbs.twimg.com/profile_images/1/avatar.jpg")
+  })
+
   it("falls back when preferred source is missing", () => {
     expect(
       resolveDisplayAvatar({
