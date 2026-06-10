@@ -7,8 +7,8 @@ import { ApiFootballClient } from "@/lib/api-football/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
-/** Full squad enrich can take 15+ min locally; Vercel Hobby still caps at 300s — pass limit there. */
-export const maxDuration = 900;
+/** Vercel Hobby cap — chunk with body `limit` / `offset` for large squads. */
+export const maxDuration = 300;
 
 type EnrichBody = {
   /** API season for current club + profile (e.g. 2025). */

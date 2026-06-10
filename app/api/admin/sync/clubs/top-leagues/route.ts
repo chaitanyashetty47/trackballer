@@ -8,7 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin"
 
 export const runtime = "nodejs"
 /** Five sequential /teams calls at ~10 req/min. */
-export const maxDuration = 120
+export const maxDuration = 300
 
 type SeedBody = {
   seasonYear?: number

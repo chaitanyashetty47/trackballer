@@ -3,7 +3,7 @@ import { assertSyncAuthorized } from "@/lib/admin/sync-auth";
 import { createCatalogSync, jsonError, runSync } from "@/lib/admin/sync-handler";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 type RouteContext = { params: Promise<{ id: string }> };
 
