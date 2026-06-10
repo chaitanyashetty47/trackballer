@@ -1,5 +1,6 @@
 import { cache } from "react"
 
+import { COMMENT_PROFILE_SELECT } from "@/lib/comment/profile-select"
 import { createClient } from "@/lib/supabase/server"
 
 import { sevenDaysAgoIso } from "./dates"
@@ -14,12 +15,7 @@ const COMMENT_SELECT = `
   upvote_count,
   created_at,
   user_id,
-  profile:profiles!comments_user_id_fkey(
-    username,
-    display_name,
-    favourite_club:teams!profiles_favourite_club_id_fkey(id, name, logo_url),
-    favourite_national_team:teams!profiles_favourite_national_team_id_fkey(id, name, logo_url)
-  ),
+  profile:profiles!comments_user_id_fkey(${COMMENT_PROFILE_SELECT}),
   player:players!comments_player_id_fkey(id, name, photo_url)
 `
 
@@ -33,6 +29,7 @@ type CommentRow = {
   profile: {
     username: string | null
     display_name: string
+    avatar_url: string | null
     favourite_club: { id: number; name: string; logo_url: string | null } | null
     favourite_national_team: { id: number; name: string; logo_url: string | null } | null
   } | null
@@ -55,6 +52,7 @@ function mapCommentRow(row: CommentRow): TrendingCommentCard | null {
     authorUserId: row.user_id,
     authorUsername: row.profile?.username ?? null,
     authorDisplayName: row.profile?.display_name ?? "user",
+    authorAvatarUrl: row.profile?.avatar_url ?? null,
     authorClub: row.profile?.favourite_club ?? null,
     authorNationalTeam: row.profile?.favourite_national_team ?? null,
     playerId: row.player.id,

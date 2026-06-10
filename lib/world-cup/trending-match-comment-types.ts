@@ -14,6 +14,7 @@ export type TrendingMatchCommentCard = {
   authorUserId: string
   authorUsername: string | null
   authorDisplayName: string
+  authorAvatarUrl: string | null
   authorClub: { id: number; name: string; logo_url: string | null } | null
   authorNationalTeam: { id: number; name: string; logo_url: string | null } | null
   fixtureId: number

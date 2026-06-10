@@ -12,6 +12,7 @@ const baseRow = {
   profile: {
     username: "fan1",
     display_name: "Fan One",
+    avatar_url: "https://example.com/avatar.jpg",
     favourite_club: null,
     favourite_national_team: null,
   },

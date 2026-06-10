@@ -38,6 +38,7 @@ export type TrendingCommentCard = {
   authorUserId: string
   authorUsername: string | null
   authorDisplayName: string
+  authorAvatarUrl: string | null
   authorClub: TrendingCommentTeam | null
   authorNationalTeam: TrendingCommentTeam | null
   playerId: number

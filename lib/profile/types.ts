@@ -35,19 +35,43 @@ export type RecentRatingItem = {
   kind: "match" | "career"
   playerId: number
   playerName: string
+  photoUrl: string | null
   value: number
   ratedAt: string
+  /** Set for match ratings — the team the rated player faced. */
+  oppositionTeam: ProfileTeam | null
 }
 
-export type RecentCommentItem = {
+type RecentCommentTeam = {
+  id: number
+  name: string
+  logoUrl: string | null
+  code: string | null
+}
+
+export type RecentPlayerCommentItem = {
+  targetType: "player"
   id: number
   body: string
-  score: number
+  upvoteCount: number
   createdAt: string
-  playerId: number | null
-  fixtureId: number | null
-  playerName: string | null
+  playerId: number
+  playerName: string
+  playerPhotoUrl: string | null
 }
+
+export type RecentMatchCommentItem = {
+  targetType: "match"
+  id: number
+  body: string
+  upvoteCount: number
+  createdAt: string
+  fixtureId: number
+  homeTeam: RecentCommentTeam
+  awayTeam: RecentCommentTeam
+}
+
+export type RecentCommentItem = RecentPlayerCommentItem | RecentMatchCommentItem
 
 export type ProfilePageData = {
   profile: ProfileView
@@ -55,6 +79,7 @@ export type ProfilePageData = {
   recentRatings: RecentRatingItem[]
   recentComments: RecentCommentItem[]
   isOwner: boolean
+  viewerUserId: string | null
   teamOptions: {
     clubs: TeamOption[]
     nationalTeams: TeamOption[]

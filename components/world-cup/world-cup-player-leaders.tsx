@@ -3,6 +3,7 @@ import Link from "next/link"
 import { PlayerAvatar } from "@/components/player-avatar"
 import { CareerRatingChip } from "@/components/rating/career-rating-chip"
 import { RatingChip } from "@/components/rating/rating-chip"
+import { TeamFlag } from "@/components/team-flag"
 import {
   wcSidebarCardClass,
   wcSidebarTitleClass,
@@ -48,14 +49,22 @@ function LeaderRow({
         >
           {player.name}
         </p>
-        {player.nationality ? (
+        {player.nationalTeam ? (
           <p
             className={cn(
-              "truncate text-muted-foreground",
+              "flex min-w-0 items-center gap-1 truncate text-muted-foreground",
               compact ? "text-[10px]" : "text-xs",
             )}
           >
-            {player.nationality}
+            <TeamFlag
+              team={{
+                name: player.nationalTeam.name,
+                logo_url: player.nationalTeam.logoUrl,
+                code: player.nationalTeam.code,
+              }}
+              size="sm"
+            />
+            <span className="truncate">{player.nationalTeam.name}</span>
           </p>
         ) : null}
       </div>

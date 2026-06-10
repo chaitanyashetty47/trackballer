@@ -12,7 +12,7 @@ type ProfilePageProps = {
 }
 
 export function ProfilePage({ data }: ProfilePageProps) {
-  const { profile, stats, recentRatings, recentComments, isOwner, teamOptions } =
+  const { profile, stats, recentRatings, recentComments, isOwner, viewerUserId, teamOptions } =
     data
 
   const topRatings = recentRatings.slice(0, 3)
@@ -40,13 +40,17 @@ export function ProfilePage({ data }: ProfilePageProps) {
           )}
         >
           <section>
-            <h2 className="h3 mb-3">Top ratings</h2>
+            <h2 className="h3 mb-3">Recent ratings</h2>
             <RecentRatingsList ratings={topRatings} />
           </section>
 
           <section>
             <h2 className="h3 mb-3">Recent comments</h2>
-            <RecentCommentsList comments={topComments} />
+            <RecentCommentsList
+              comments={topComments}
+              profile={profile}
+              viewerUserId={viewerUserId}
+            />
           </section>
         </aside>
       </div>

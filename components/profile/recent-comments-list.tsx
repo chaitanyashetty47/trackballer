@@ -1,18 +1,18 @@
-import Link from "next/link"
-
-import type { RecentCommentItem } from "@/lib/profile/types"
+import { MatchCommentPreviewCard } from "@/components/comment/match-comment-preview-card"
+import { PlayerCommentPreviewCard } from "@/components/comment/player-comment-preview-card"
+import type { ProfileView, RecentCommentItem } from "@/lib/profile/types"
 
 type RecentCommentsListProps = {
   comments: RecentCommentItem[]
+  profile: ProfileView
+  viewerUserId: string | null
 }
 
-function commentTargetHref(comment: RecentCommentItem): string | null {
-  if (comment.playerId) return `/player/${comment.playerId}`
-  if (comment.fixtureId) return `/match/${comment.fixtureId}`
-  return null
-}
-
-export function RecentCommentsList({ comments }: RecentCommentsListProps) {
+export function RecentCommentsList({
+  comments,
+  profile,
+  viewerUserId,
+}: RecentCommentsListProps) {
   if (comments.length === 0) {
     return (
       <p className="body-sm text-muted-foreground">No comments yet.</p>
@@ -20,33 +20,69 @@ export function RecentCommentsList({ comments }: RecentCommentsListProps) {
   }
 
   return (
-    <ul className="space-y-3">
-      {comments.map((c) => {
-        const href = commentTargetHref(c)
-        const excerpt =
-          c.body.length > 120 ? `${c.body.slice(0, 120)}…` : c.body
+    <div className="space-y-3">
+      {comments.map((comment) => {
+        if (comment.targetType === "player") {
+          return (
+            <PlayerCommentPreviewCard
+              key={comment.id}
+              body={comment.body}
+              upvoteCount={comment.upvoteCount}
+              createdAt={comment.createdAt}
+              authorUserId={profile.id}
+              authorUsername={profile.username}
+              authorDisplayName={profile.displayName}
+              authorAvatarUrl={null}
+              authorClub={null}
+              authorNationalTeam={null}
+              playerId={comment.playerId}
+              playerName={comment.playerName}
+              playerPhotoUrl={comment.playerPhotoUrl}
+              currentUserId={viewerUserId}
+              showAuthorMeta={false}
+              showUpvoteCount
+              linkPrefix="On"
+            />
+          )
+        }
 
         return (
-          <li
-            key={c.id}
-            className="rounded-lg border border-border bg-card px-4 py-3"
+          <div
+            key={comment.id}
+            className="overflow-hidden rounded-lg border border-border bg-card"
           >
-            <p className="text-sm text-foreground">{excerpt}</p>
-            <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-              <span>{c.score} points</span>
-              {href && c.playerName ? (
-                <Link href={href} className="text-primary hover:underline">
-                  on {c.playerName}
-                </Link>
-              ) : href ? (
-                <Link href={href} className="text-primary hover:underline">
-                  View thread
-                </Link>
-              ) : null}
-            </div>
-          </li>
+            <MatchCommentPreviewCard
+              body={comment.body}
+              upvoteCount={comment.upvoteCount}
+              createdAt={comment.createdAt}
+              authorUserId={profile.id}
+              authorUsername={profile.username}
+              authorDisplayName={profile.displayName}
+              authorAvatarUrl={null}
+              authorClub={null}
+              authorNationalTeam={null}
+              fixtureId={comment.fixtureId}
+              homeTeam={{
+                id: comment.homeTeam.id,
+                name: comment.homeTeam.name,
+                logo_url: comment.homeTeam.logoUrl,
+                code: comment.homeTeam.code,
+              }}
+              awayTeam={{
+                id: comment.awayTeam.id,
+                name: comment.awayTeam.name,
+                logo_url: comment.awayTeam.logoUrl,
+                code: comment.awayTeam.code,
+              }}
+              currentUserId={viewerUserId}
+              showAuthorMeta={false}
+              showUpvoteCount
+              linkPrefix="On"
+              className="border-b-0"
+            />
+          </div>
         )
       })}
-    </ul>
+    </div>
   )
 }

@@ -17,11 +17,28 @@ type AggregateRow = {
   rating_count: number
 }
 
+type NationalTeamRow = {
+  id: number
+  name: string
+  logo_url: string | null
+  code: string | null
+}
+
 type PlayerMetaRow = {
   id: number
   name: string
   photo_url: string | null
-  nationality: string | null
+  national_team: NationalTeamRow | null
+}
+
+function mapNationalTeam(raw: NationalTeamRow | null): WcPlayerLeaderRow["nationalTeam"] {
+  if (!raw) return null
+  return {
+    id: raw.id,
+    name: raw.name,
+    logoUrl: raw.logo_url,
+    code: raw.code,
+  }
 }
 
 export function rankRecentMatchLeaders(
@@ -53,7 +70,9 @@ async function loadPlayerMeta(playerIds: number[]): Promise<Map<number, PlayerMe
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("players")
-    .select("id, name, photo_url, nationality")
+    .select(
+      "id, name, photo_url, national_team:teams!players_national_team_id_fkey(id, name, logo_url, code)",
+    )
     .in("id", playerIds)
 
   if (error) {
@@ -93,7 +112,7 @@ async function fetchRecentMatchLeaders(seasonId: number): Promise<WcPlayerLeader
       id: player.id,
       name: player.name,
       photoUrl: player.photo_url,
-      nationality: player.nationality,
+      nationalTeam: mapNationalTeam(player.national_team),
       score: row.score,
       careerTier: null,
     })
@@ -116,7 +135,7 @@ async function fetchTrendingLeaders(): Promise<WcPlayerLeaderRow[]> {
       id: p.id,
       name: player?.name ?? p.name,
       photoUrl: player?.photo_url ?? p.photoUrl,
-      nationality: player?.nationality ?? null,
+      nationalTeam: mapNationalTeam(player?.national_team ?? null),
       score: p.displayScore,
       careerTier: p.tier,
     }
