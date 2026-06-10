@@ -5,7 +5,7 @@ import { CommentThread } from "@/components/comment/comment-thread"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { FixtureWithTeams } from "@/lib/catalog/types"
 import type { MatchDetail } from "@/lib/match/types"
-import type { CommentWithProfile } from "@/lib/comment/types"
+import type { CommentsPageData } from "@/lib/comment/queries"
 import type { MatchLineupPlayer } from "@/lib/match/types"
 import Link from "next/link"
 
@@ -17,8 +17,7 @@ type MatchPageTabsProps = {
   canRate: boolean
   ratingsLocked: boolean
   isLoggedIn: boolean
-  comments: CommentWithProfile[]
-  userVotes: Record<number, 1 | -1>
+  commentsPage?: CommentsPageData
   currentUserId: string | null
   errorMessage: string | null
   onRateAll: () => void
@@ -31,8 +30,7 @@ export function MatchPageTabs({
   canRate,
   ratingsLocked,
   isLoggedIn,
-  comments,
-  userVotes,
+  commentsPage,
   currentUserId,
   errorMessage,
   onRateAll,
@@ -83,14 +81,21 @@ export function MatchPageTabs({
           </p>
         )}
 
-        <CommentThread
-          initialComments={comments}
-          initialUserVotes={userVotes}
-          targetType="match"
-          targetId={fixture.id}
-          isLoggedIn={isLoggedIn}
-          currentUserId={currentUserId}
-        />
+        {commentsPage && (
+          <CommentThread
+            initialComments={commentsPage.comments}
+            initialUserVotes={commentsPage.userVotes}
+            totalParentCount={commentsPage.totalParentCount}
+            initialParentHasMore={commentsPage.parentHasMore}
+            initialParentNextCursor={commentsPage.parentNextCursor}
+            initialReplyPagination={commentsPage.replyPagination}
+            initialSort={commentsPage.initialSort}
+            targetType="match"
+            targetId={fixture.id}
+            isLoggedIn={isLoggedIn}
+            currentUserId={currentUserId}
+          />
+        )}
 
         <p className="body-sm mt-6 text-center">
           <Link href="/world-cup" className="text-primary underline-offset-4 hover:underline">

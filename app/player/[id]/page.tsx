@@ -28,7 +28,7 @@ export default async function PlayerPage({ params }: PageProps) {
     notFound()
   }
 
-  const { comments, userVotes } = await getComments("player", playerId, auth?.userId ?? null)
+  const commentsPage = await getComments("player", playerId, auth?.userId ?? null)
 
   return (
     <div className="w-full py-8">
@@ -44,8 +44,13 @@ export default async function PlayerPage({ params }: PageProps) {
 
       <div className="mt-6 px-4 lg:ml-[5%] lg:w-[55%] lg:px-0">
         <CommentThread
-          initialComments={comments}
-          initialUserVotes={userVotes}
+          initialComments={commentsPage.comments}
+          initialUserVotes={commentsPage.userVotes}
+          totalParentCount={commentsPage.totalParentCount}
+          initialParentHasMore={commentsPage.parentHasMore}
+          initialParentNextCursor={commentsPage.parentNextCursor}
+          initialReplyPagination={commentsPage.replyPagination}
+          initialSort={commentsPage.initialSort}
           targetType="player"
           targetId={playerId}
           isLoggedIn={Boolean(auth)}

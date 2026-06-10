@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache"
 import { normalizeCommentRow } from "@/lib/comment/normalize"
 import { requireServerAuth } from "@/lib/auth/server-session"
+import type { Database } from "@/lib/database.types"
 import { createClient } from "@/lib/supabase/server"
+import { MAX_THREAD_DEPTH } from "@/lib/comment/pagination"
 import { COMMENT_PROFILE_SELECT } from "./profile-select"
 import {
   submitCommentSchema,
@@ -44,11 +46,36 @@ export async function submitComment(input: unknown): Promise<SubmitCommentResult
     return { ok: false, error: "You cannot comment at this time." }
   }
 
-  const commentData: any = {
+  let thread_root_id: number | null = null
+  let thread_depth = 0
+
+  if (parent_id) {
+    const { data: parent, error: parentError } = await supabase
+      .from("comments")
+      .select("id, thread_root_id, thread_depth, is_deleted")
+      .eq("id", parent_id)
+      .maybeSingle()
+
+    if (parentError || !parent || parent.is_deleted) {
+      return { ok: false, error: "Could not reply to that comment." }
+    }
+
+    const nextDepth = parent.thread_depth + 1
+    if (nextDepth > MAX_THREAD_DEPTH) {
+      return { ok: false, error: "This thread is too deep to reply further." }
+    }
+
+    thread_root_id = parent.thread_root_id ?? parent.id
+    thread_depth = nextDepth
+  }
+
+  const commentData: Database["public"]["Tables"]["comments"]["Insert"] = {
     user_id: userId,
     body,
     target_type,
     parent_id: parent_id || null,
+    thread_root_id,
+    thread_depth,
   }
 
   if (target_type === "player" && player_id) {

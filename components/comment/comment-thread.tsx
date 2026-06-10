@@ -1,23 +1,34 @@
 "use client"
 
-import { useEffect, useMemo, useState, useTransition } from "react"
+import { useCallback, useEffect, useMemo, useState, useTransition, ViewTransition } from "react"
 
-import { CommentItem } from "./comment-item"
+import { CommentThreadBlock } from "./comment-thread-block"
 import { CommentComposer } from "./comment-composer"
+import { useInfiniteScroll } from "./use-infinite-scroll"
 import {
   addCommentToTree,
+  appendThreadComments,
+  appendUniqueParents,
   settlePendingComment,
   removeCommentById,
   deleteCommentInTree,
   mergeServerWithPendingComments,
   pruneDeletedComments,
-  sortComments,
   updateVoteInTree,
 } from "@/lib/comment/comment-tree"
+import {
+  fetchParentCommentsPageAction,
+  fetchThreadCommentsPageAction,
+} from "@/lib/comment/fetch-comments-page"
 import {
   applyUserVoteToMap,
   computeVoteTransition,
 } from "@/lib/comment/optimistic-vote"
+import type {
+  CommentSort,
+  ParentCursor,
+  ReplyPaginationMeta,
+} from "@/lib/comment/pagination"
 import { submitComment, deleteComment } from "@/lib/comment/submit-comment"
 import { submitVote } from "@/lib/comment/submit-vote"
 import type { CommentDisplay, CommentWithProfile } from "@/lib/comment/types"
@@ -25,6 +36,11 @@ import type { CommentDisplay, CommentWithProfile } from "@/lib/comment/types"
 interface CommentThreadProps {
   initialComments: CommentWithProfile[]
   initialUserVotes: Record<number, 1 | -1>
+  totalParentCount: number
+  initialParentHasMore: boolean
+  initialParentNextCursor: ParentCursor | null
+  initialReplyPagination: Record<number, ReplyPaginationMeta>
+  initialSort?: CommentSort
   targetType: "player" | "match"
   targetId: number
   isLoggedIn: boolean
@@ -51,6 +67,8 @@ function buildPendingComment(
     player_id: targetType === "player" ? targetId : null,
     fixture_id: targetType === "match" ? targetId : null,
     target_type: targetType,
+    thread_root_id: null,
+    thread_depth: 0,
     profile: {
       id: currentUserId,
       username: null,
@@ -64,17 +82,39 @@ function buildPendingComment(
   }
 }
 
+function mergeVoteMaps(
+  existing: Record<number, 1 | -1>,
+  incoming: Record<number, 1 | -1>,
+): Record<number, 1 | -1> {
+  return { ...existing, ...incoming }
+}
+
 export function CommentThread({
   initialComments,
   initialUserVotes,
+  totalParentCount: initialTotalParentCount,
+  initialParentHasMore,
+  initialParentNextCursor,
+  initialReplyPagination,
+  initialSort = "top",
   targetType,
   targetId,
   isLoggedIn,
   currentUserId,
 }: CommentThreadProps) {
-  const [sort, setSort] = useState<"top" | "new">("top")
+  const [sort, setSort] = useState<CommentSort>(initialSort)
   const [comments, setComments] = useState<CommentDisplay[]>(initialComments)
   const [userVotes, setUserVotes] = useState(initialUserVotes)
+  const [totalParentCount, setTotalParentCount] = useState(initialTotalParentCount)
+  const [parentHasMore, setParentHasMore] = useState(initialParentHasMore)
+  const [parentCursor, setParentCursor] = useState<ParentCursor | null>(
+    initialParentNextCursor,
+  )
+  const [replyMeta, setReplyMeta] =
+    useState<Record<number, ReplyPaginationMeta>>(initialReplyPagination)
+  const [loadingThreadFor, setLoadingThreadFor] = useState<number | null>(null)
+  const [isLoadingParents, setIsLoadingParents] = useState(false)
+  const [isLoadingSort, setIsLoadingSort] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [, startTransition] = useTransition()
 
@@ -83,19 +123,129 @@ export function CommentThread({
       mergeServerWithPendingComments(pruneDeletedComments(initialComments), prev),
     )
     setUserVotes(initialUserVotes)
-  }, [initialComments, initialUserVotes])
+    setTotalParentCount(initialTotalParentCount)
+    setParentHasMore(initialParentHasMore)
+    setParentCursor(initialParentNextCursor)
+    setReplyMeta(initialReplyPagination)
+    setSort(initialSort)
+  }, [
+    initialComments,
+    initialUserVotes,
+    initialTotalParentCount,
+    initialParentHasMore,
+    initialParentNextCursor,
+    initialReplyPagination,
+    initialSort,
+  ])
 
   const visibleComments = useMemo(
     () => pruneDeletedComments(comments),
     [comments],
   )
 
-  const sortedComments = useMemo(
-    () => sortComments(visibleComments, sort),
-    [visibleComments, sort],
-  )
+  const loadMoreParents = useCallback(() => {
+    if (!parentHasMore || isLoadingParents || isLoadingSort) return
 
-  const topLevelCount = visibleComments.length
+    setIsLoadingParents(true)
+    startTransition(async () => {
+      const result = await fetchParentCommentsPageAction({
+        target_type: targetType,
+        target_id: targetId,
+        sort,
+        cursor: parentCursor ?? undefined,
+      })
+
+      setIsLoadingParents(false)
+
+      if (!result.ok) {
+        setErrorMessage(result.error)
+        return
+      }
+
+      setComments((prev) =>
+        appendUniqueParents(prev, pruneDeletedComments(result.comments)),
+      )
+      setUserVotes((prev) => mergeVoteMaps(prev, result.userVotes))
+      setParentHasMore(result.hasMore)
+      setParentCursor(result.nextCursor)
+      setReplyMeta((prev) => ({ ...prev, ...result.replyPagination }))
+    })
+  }, [
+    parentHasMore,
+    isLoadingParents,
+    isLoadingSort,
+    targetType,
+    targetId,
+    sort,
+    parentCursor,
+    startTransition,
+  ])
+
+  const parentSentinelRef = useInfiniteScroll({
+    hasMore: parentHasMore,
+    isLoading: isLoadingParents || isLoadingSort,
+    onLoadMore: loadMoreParents,
+  })
+
+  function handleSortChange(nextSort: CommentSort) {
+    if (nextSort === sort || isLoadingSort) return
+
+    setSort(nextSort)
+    setIsLoadingSort(true)
+    setErrorMessage(null)
+
+    startTransition(async () => {
+      const result = await fetchParentCommentsPageAction({
+        target_type: targetType,
+        target_id: targetId,
+        sort: nextSort,
+      })
+
+      setIsLoadingSort(false)
+
+      if (!result.ok) {
+        setErrorMessage(result.error)
+        return
+      }
+
+      setComments((prev) =>
+        mergeServerWithPendingComments(pruneDeletedComments(result.comments), prev),
+      )
+      setUserVotes((prev) => mergeVoteMaps(prev, result.userVotes))
+      setParentHasMore(result.hasMore)
+      setParentCursor(result.nextCursor)
+      setReplyMeta(result.replyPagination)
+    })
+  }
+
+  function handleLoadMoreThread(threadRootId: number) {
+    const meta = replyMeta[threadRootId]
+    if (!meta?.hasMore || loadingThreadFor != null) return
+
+    setLoadingThreadFor(threadRootId)
+    setErrorMessage(null)
+
+    startTransition(async () => {
+      const result = await fetchThreadCommentsPageAction({
+        thread_root_id: threadRootId,
+        cursor: meta.nextCursor ?? undefined,
+      })
+
+      setLoadingThreadFor(null)
+
+      if (!result.ok) {
+        setErrorMessage(result.error)
+        return
+      }
+
+      setComments((prev) => appendThreadComments(prev, threadRootId, result.replies))
+      setUserVotes((prev) => mergeVoteMaps(prev, result.userVotes))
+      setReplyMeta((prev) => ({
+        ...prev,
+        [threadRootId]: { hasMore: result.hasMore, nextCursor: result.nextCursor },
+      }))
+    })
+  }
 
   function handleVote(commentId: number, value: 1 | -1) {
     if (!isLoggedIn) {
@@ -159,6 +309,9 @@ export function CommentThread({
     const tempId = pending.id
 
     setComments((prev) => addCommentToTree(prev, pending))
+    if (parentId == null) {
+      setTotalParentCount((count) => count + 1)
+    }
 
     return new Promise((resolve) => {
       startTransition(async () => {
@@ -178,6 +331,9 @@ export function CommentThread({
         }
 
         setComments((prev) => removeCommentById(prev, tempId))
+        if (parentId == null) {
+          setTotalParentCount((count) => Math.max(0, count - 1))
+        }
         setErrorMessage(result.error)
         resolve({ ok: false, error: result.error })
       })
@@ -187,12 +343,13 @@ export function CommentThread({
   return (
     <section className="mt-8 space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Comments ({topLevelCount})</h3>
+        <h3 className="text-lg font-semibold">Comments ({totalParentCount})</h3>
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => setSort("top")}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+            onClick={() => handleSortChange("top")}
+            disabled={isLoadingSort}
+            className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
               sort === "top"
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -202,8 +359,9 @@ export function CommentThread({
           </button>
           <button
             type="button"
-            onClick={() => setSort("new")}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+            onClick={() => handleSortChange("new")}
+            disabled={isLoadingSort}
+            className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
               sort === "new"
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -225,26 +383,36 @@ export function CommentThread({
         </p>
       )}
 
-      {sortedComments.length === 0 ? (
+      {visibleComments.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">
           No comments yet. Be the first to comment!
         </p>
       ) : (
-        <div className="space-y-6">
-          {sortedComments.map((comment) => (
-            <CommentItem
-              key={comment.id}
-              comment={comment}
-              userVote={userVotes[comment.id] ?? null}
-              isLoggedIn={isLoggedIn}
-              currentUserId={currentUserId}
-              depth={0}
-              userVotesMap={userVotes}
-              onVote={handleVote}
-              onDelete={handleDelete}
-              onPostReply={(body, parentId) => handlePostComment(body, parentId)}
-            />
+        <div className={`space-y-6 ${isLoadingSort ? "opacity-60" : ""}`}>
+          {visibleComments.map((comment) => (
+            <ViewTransition key={comment.id} enter="fade-in" default="none">
+              <CommentThreadBlock
+                root={comment}
+                userVotesMap={userVotes}
+                threadMeta={replyMeta[comment.id]}
+                isLoadingThread={loadingThreadFor === comment.id}
+                isLoggedIn={isLoggedIn}
+                currentUserId={currentUserId}
+                onVote={handleVote}
+                onDelete={handleDelete}
+                onPostReply={(body, parentId) => handlePostComment(body, parentId)}
+                onLoadMoreThread={handleLoadMoreThread}
+              />
+            </ViewTransition>
           ))}
+
+          {parentHasMore && (
+            <div ref={parentSentinelRef} className="flex justify-center py-4">
+              {isLoadingParents && (
+                <p className="text-sm text-muted-foreground">Loading more comments…</p>
+              )}
+            </div>
+          )}
         </div>
       )}
     </section>

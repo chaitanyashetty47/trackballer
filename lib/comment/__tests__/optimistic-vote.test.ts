@@ -27,6 +27,8 @@ function comment(overrides: Partial<CommentDisplay> = {}): CommentDisplay {
     player_id: 10,
     fixture_id: null,
     target_type: "player",
+    thread_root_id: null,
+    thread_depth: 0,
     profile: null,
     replies: [],
     ...overrides,
@@ -146,6 +148,21 @@ describe("deleteCommentInTree", () => {
     const next = deleteCommentInTree(tree, 2)
     expect(next[0]?.is_deleted).toBe(false)
     expect(next[0]?.replies).toEqual([])
+  })
+
+  it("keeps a deleted stub when a nested reply has children", () => {
+    const tree = [
+      comment({
+        id: 1,
+        replies: [
+          comment({ id: 2, parent_id: 1, thread_root_id: 1, thread_depth: 1 }),
+          comment({ id: 3, parent_id: 2, thread_root_id: 1, thread_depth: 2 }),
+        ],
+      }),
+    ]
+    const next = deleteCommentInTree(tree, 2)
+    expect(next[0]?.replies).toHaveLength(2)
+    expect(next[0]?.replies.find((row) => row.id === 2)?.is_deleted).toBe(true)
   })
 })
 
