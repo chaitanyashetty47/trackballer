@@ -87,6 +87,21 @@ export function mapPlayersFromSquad(
   }));
 }
 
+/** Club squads from domestic leagues — sets current club, not national team. */
+export function mapPlayersFromClubSquad(
+  squad: ApiSquadItem,
+): PlayerInsert[] {
+  const clubTeamId = squad.team.id;
+  return squad.players.map((p) => ({
+    id: p.id,
+    name: p.name,
+    age: p.age ?? null,
+    photo_url: p.photo ?? null,
+    primary_position: normalizePosition(p.position),
+    club_team_id: clubTeamId,
+  }));
+}
+
 export function mapFixtureRow(
   item: ApiFixtureItem,
   seasonId: number,
