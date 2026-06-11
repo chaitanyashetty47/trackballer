@@ -8,7 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 /** One API call per incomplete player at ~10 req/min — chunk with limit on Vercel Hobby. */
-export const maxDuration = 300;
+export const maxDuration = 3000000000000000000000000000000000;
 
 type EnrichBody = {
   profileSeasonYear?: number;
@@ -17,9 +17,9 @@ type EnrichBody = {
 };
 
 /**
- * POST /api/admin/sync/players/enrich
- * Alias of enrich-profile — fills identity fields only; does not touch club or NT ids.
- * Prefer POST /api/admin/sync/players/enrich-profile for new integrations.
+ * POST /api/admin/sync/players/enrich-profile
+ * Fills firstname, lastname, nationality, and birth_date when any are missing.
+ * Does not change club_team_id or national_team_id (use top-leagues sync for clubs).
  */
 export async function POST(request: NextRequest) {
   const unauthorized = assertSyncAuthorized(request);

@@ -1,7 +1,10 @@
 "use client"
 
+import { useMemo } from "react"
+
 import { MatchRow } from "@/components/match-row"
 import { MatchRowList } from "@/components/match/match-row-list"
+import { useMounted } from "@/hooks/use-mounted"
 import type { FixtureWithTeams } from "@/lib/catalog/types"
 import {
   formatMatchKickoffDateHeadingLocal,
@@ -34,15 +37,23 @@ function groupFixturesByLocalDate(fixtures: FixtureWithTeams[]) {
 }
 
 export function WorldCupFixturesList({ fixtures }: WorldCupFixturesListProps) {
-  const groups = groupFixturesByLocalDate(fixtures)
+  const mounted = useMounted()
+  const groups = useMemo(() => {
+    if (!mounted) {
+      return [{ key: "pending", label: "", fixtures }]
+    }
+    return groupFixturesByLocalDate(fixtures)
+  }, [mounted, fixtures])
 
   return (
     <div className="space-y-4">
       {groups.map((group) => (
         <div key={group.key}>
-          <div className="mb-2 rounded-lg bg-muted px-3 py-2 text-xs font-medium text-foreground md:text-[0.7rem]">
-            <time suppressHydrationWarning>{group.label}</time>
-          </div>
+          {group.label ? (
+            <div className="mb-2 rounded-lg bg-muted px-3 py-2 text-xs font-medium text-foreground md:text-[0.7rem]">
+              <time>{group.label}</time>
+            </div>
+          ) : null}
           <MatchRowList className="overflow-hidden rounded-lg border border-border bg-card">
             {group.fixtures.map((fixture) => (
               <MatchRow

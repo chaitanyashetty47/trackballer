@@ -1,5 +1,6 @@
 "use client"
 
+import { useMounted } from "@/hooks/use-mounted"
 import type { MatchScoreFixture } from "@/lib/match/score"
 import {
   formatKickoffDateLocalShort,
@@ -18,14 +19,19 @@ type MatchRowScoreBlockProps = {
 
 /** Centre score/time + status line; uses viewer-local kickoff for upcoming matches. */
 export function MatchRowScoreBlock({ fixture, compact = false }: MatchRowScoreBlockProps) {
+  const mounted = useMounted()
   const { scoreline, statusLabel, isLive } = formatMatchScore(fixture)
   const isUpcoming = UPCOMING.has(fixture.status_short)
-  const displayScoreline = isUpcoming
-    ? formatKickoffTimeLocal(fixture.kickoff_at)
-    : scoreline
-  const displayStatus = isUpcoming
-    ? formatKickoffDateLocalShort(fixture.kickoff_at)
-    : statusLabel
+  const displayScoreline =
+    isUpcoming && mounted
+      ? formatKickoffTimeLocal(fixture.kickoff_at)
+      : isUpcoming
+        ? "–"
+        : scoreline
+  const displayStatus =
+    isUpcoming && mounted
+      ? formatKickoffDateLocalShort(fixture.kickoff_at)
+      : statusLabel
   const shouldUppercase =
     !displayStatus.startsWith("PEN (") && !FRIENDLY_STATUS_LABELS.has(displayStatus)
 
@@ -37,7 +43,7 @@ export function MatchRowScoreBlock({ fixture, compact = false }: MatchRowScoreBl
           compact ? "text-[14.4px]" : "text-lg",
         )}
       >
-        <time dateTime={fixture.kickoff_at} suppressHydrationWarning>
+        <time dateTime={fixture.kickoff_at}>
           {displayScoreline}
         </time>
       </span>
@@ -50,7 +56,7 @@ export function MatchRowScoreBlock({ fixture, compact = false }: MatchRowScoreBl
           shouldUppercase && "uppercase",
         )}
       >
-        <time dateTime={fixture.kickoff_at} suppressHydrationWarning>
+        <time dateTime={fixture.kickoff_at}>
           {displayStatus}
         </time>
       </span>

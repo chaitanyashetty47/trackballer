@@ -70,6 +70,28 @@ export function mergePlayerStub(
   return merged;
 }
 
+/** Identity fields only — never changes club_team_id or national_team_id. */
+export function mergePlayerIdentityFields(
+  existing: PlayerRow | null,
+  incoming: PlayerInsert,
+): PlayerInsert {
+  const id = incoming.id;
+
+  return {
+    id,
+    name: pickName(incoming.name, existing?.name, id),
+    firstname: existing?.firstname ?? incoming.firstname ?? null,
+    lastname: existing?.lastname ?? incoming.lastname ?? null,
+    nationality: existing?.nationality ?? incoming.nationality ?? null,
+    birth_date: existing?.birth_date ?? incoming.birth_date ?? null,
+    age: existing?.age ?? incoming.age ?? null,
+    photo_url: existing?.photo_url ?? incoming.photo_url ?? null,
+    primary_position: existing?.primary_position ?? null,
+    club_team_id: existing?.club_team_id ?? null,
+    national_team_id: existing?.national_team_id ?? null,
+  };
+}
+
 /** Full profile from /players — preserve squad national_team_id when already set. */
 export function mergePlayerProfile(
   existing: PlayerRow | null,
