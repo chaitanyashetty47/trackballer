@@ -8,7 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 /** One API call per incomplete player at ~10 req/min — chunk with limit on Vercel Hobby. */
-export const maxDuration = 3000000000000000000000000000000000;
+export const maxDuration = 300
 
 type EnrichBody = {
   profileSeasonYear?: number;
