@@ -19,11 +19,13 @@ export type MatchdayBatchStats = {
   batchRefreshed: number;
   liveSnapshotSynced: number;
   liveSnapshotFailed: number;
+  eventsOnlySynced: number;
+  eventsOnlyFailed: number;
   detailSynced: number;
   detailFailed: number;
   detailRemaining: number;
   syncedFixtureIds: number[];
-  failures: Array<{ fixtureId: number; error: string; phase: "live" | "detail" }>;
+  failures: Array<{ fixtureId: number; error: string; phase: "live" | "events" | "detail" }>;
 };
 
 /** UTC bounds: start of yesterday through end of today. */
@@ -110,6 +112,8 @@ export async function syncMatchdayBatch(
     batchRefreshed,
     liveSnapshotSynced: 0,
     liveSnapshotFailed: 0,
+    eventsOnlySynced: 0,
+    eventsOnlyFailed: 0,
     detailSynced: 0,
     detailFailed: 0,
     detailRemaining: plan.fullDetailRemaining,
@@ -127,6 +131,21 @@ export async function syncMatchdayBatch(
       stats.failures.push({
         fixtureId,
         phase: "live",
+        error: err instanceof Error ? err.message : "Unknown error",
+      });
+    }
+  }
+
+  for (const fixtureId of plan.eventsOnlyIds) {
+    try {
+      await sync.syncFixtureDetail(fixtureId, { scope: "events" });
+      stats.eventsOnlySynced += 1;
+      stats.syncedFixtureIds.push(fixtureId);
+    } catch (err) {
+      stats.eventsOnlyFailed += 1;
+      stats.failures.push({
+        fixtureId,
+        phase: "events",
         error: err instanceof Error ? err.message : "Unknown error",
       });
     }

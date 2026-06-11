@@ -8,8 +8,10 @@ export type MatchdayFixtureRow = {
 };
 
 export type MatchdaySyncPlan = {
-  /** Lineups + events (2 API calls each). In-play always; NS only when lineups missing. */
+  /** Lineups + events (2 API calls). NS or in-play when lineups not yet in DB. */
   liveSnapshotIds: number[];
+  /** Events only (1 API call). In-play once lineups are already synced. */
+  eventsOnlyIds: number[];
   /** Full detail (3 API calls each). Terminal fixtures still missing lineups or appearances. */
   fullDetailIds: number[];
   fullDetailRemaining: number;
@@ -20,6 +22,7 @@ export function planMatchdaySync(
   limit: number,
 ): MatchdaySyncPlan {
   const liveSnapshotIds: number[] = [];
+  const eventsOnlyIds: number[] = [];
   const needsFullDetail: number[] = [];
 
   for (const fx of fixtures) {
@@ -31,7 +34,11 @@ export function planMatchdaySync(
     }
 
     if (isLiveMatchStatus(fx.status_short)) {
-      liveSnapshotIds.push(fx.id);
+      if (fx.lineups_synced_at) {
+        eventsOnlyIds.push(fx.id);
+      } else {
+        liveSnapshotIds.push(fx.id);
+      }
       continue;
     }
 
@@ -44,6 +51,7 @@ export function planMatchdaySync(
 
   return {
     liveSnapshotIds,
+    eventsOnlyIds,
     fullDetailIds,
     fullDetailRemaining: Math.max(0, needsFullDetail.length - fullDetailIds.length),
   };
