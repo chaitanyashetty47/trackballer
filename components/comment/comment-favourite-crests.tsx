@@ -1,4 +1,4 @@
-import Image from "next/image"
+import { CatalogImage } from "@/components/catalog-image"
 
 import type { Team } from "@/lib/comment/types"
 import { cn } from "@/lib/utils"
@@ -37,14 +37,13 @@ export function CommentFavouriteCrests({
   return (
     <span className={cn("inline-flex shrink-0 items-center gap-1", className)}>
       {crests.map((team) => (
-        <Image
+        <CatalogImage
           key={team.id}
           src={team.logo_url!}
           alt={team.name}
           width={dim}
           height={dim}
           className={cn(sizeClass[size], "object-contain")}
-          unoptimized
         />
       ))}
     </span>

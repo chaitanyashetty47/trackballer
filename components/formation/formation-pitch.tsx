@@ -1,6 +1,6 @@
 "use client"
 
-import Image from "next/image"
+import { CatalogImage } from "@/components/catalog-image"
 import Link from "next/link"
 
 import {
@@ -64,13 +64,12 @@ function PitchSurface({
         const puck = (
           <>
             {assigned?.photoUrl ? (
-              <Image
+              <CatalogImage
                 src={assigned.photoUrl}
                 alt=""
                 width={44}
                 height={44}
                 className="absolute inset-0 size-full rounded-full object-cover"
-                unoptimized
               />
             ) : (
               <span>{slot.label}</span>

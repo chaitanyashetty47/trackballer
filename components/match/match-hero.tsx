@@ -1,5 +1,4 @@
-import Image from "next/image"
-
+import { CatalogImage } from "@/components/catalog-image"
 import { MatchKickoffDateTime } from "@/components/match/match-kickoff-datetime"
 import { MatchScorersRow } from "@/components/match/match-scorers-row"
 import { TeamFlag } from "@/components/team-flag"
@@ -79,7 +78,7 @@ export function MatchHero({ fixture, detail, heroScore, className }: MatchHeroPr
             {fixture.kickoff_at && <MatchKickoffDateTime iso={fixture.kickoff_at} />}
             {fixture.venue && (
               <span className="inline-flex items-center gap-1">
-                <Image
+                <CatalogImage
                   src={STADIUM_ICON}
                   alt=""
                   width={14}

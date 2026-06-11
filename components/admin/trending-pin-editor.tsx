@@ -1,11 +1,11 @@
 "use client"
 
-import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 import { ChevronDown, ChevronUp, Trash2 } from "lucide-react"
 
 import { PlayerSearchPicker } from "@/components/admin/player-search-picker"
+import { PlayerAvatar } from "@/components/player-avatar"
 import { Button } from "@/components/ui/button"
 import { removeTrendingPin, saveTrendingPins } from "@/lib/admin/actions/trending-pins"
 import type { TrendingPinRow } from "@/lib/admin/trending-pins"
@@ -97,18 +97,12 @@ export function TrendingPinEditor({ initialPins }: TrendingPinEditorProps) {
                 <span className="w-6 text-center font-mono text-sm text-muted-foreground">
                   {index + 1}
                 </span>
-                {pin.photoUrl ? (
-                  <Image
-                    src={pin.photoUrl}
-                    alt=""
-                    width={32}
-                    height={32}
-                    className="size-8 rounded-full object-cover"
-                    unoptimized
-                  />
-                ) : (
-                  <div className="size-8 rounded-full bg-muted" />
-                )}
+                <PlayerAvatar
+                  name={pin.displayName}
+                  photoUrl={pin.photoUrl}
+                  size="md"
+                  className="rounded-full"
+                />
                 <span className="min-w-0 flex-1 truncate text-sm font-medium">
                   {pin.displayName}
                 </span>

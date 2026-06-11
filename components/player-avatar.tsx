@@ -1,5 +1,4 @@
-import Image from "next/image"
-
+import { CatalogImage } from "@/components/catalog-image"
 import { cn } from "@/lib/utils"
 
 type PlayerAvatarProps = {
@@ -39,7 +38,7 @@ export function PlayerAvatar({
 
   if (photoUrl) {
     return (
-      <Image
+      <CatalogImage
         src={photoUrl}
         alt=""
         width={px}

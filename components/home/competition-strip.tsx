@@ -1,4 +1,4 @@
-import Image from "next/image"
+import { CatalogImage } from "@/components/catalog-image"
 import Link from "next/link"
 
 import type { CompetitionStrip } from "@/lib/home/types"
@@ -32,7 +32,7 @@ function StripItem({
         )}
       >
         {item.logoUrl ? (
-          <Image
+          <CatalogImage
             src={item.logoUrl}
             alt=""
             width={32}

@@ -1,5 +1,4 @@
-import Image from "next/image"
-
+import { CatalogImage } from "@/components/catalog-image"
 import {
   formatGroupedScorerLine,
   groupScorersByPlayer,
@@ -54,7 +53,7 @@ export function MatchScorersRow({ scorers, className }: MatchScorersRowProps) {
         <ScorerColumn goals={homeGroups} align="right" />
       </div>
       <span className="flex size-5 shrink-0 items-center justify-center pt-0.5">
-        <Image
+        <CatalogImage
           src={GOAL_ICON}
           alt=""
           width={14}

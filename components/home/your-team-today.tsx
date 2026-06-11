@@ -1,5 +1,6 @@
-import Image from "next/image"
 import Link from "next/link"
+
+import { TeamFlag } from "@/components/team-flag"
 
 import { formatYourTeamKickoff } from "@/lib/home/your-team-today"
 import type { YourTeamTodayItem } from "@/lib/home/types"
@@ -22,12 +23,13 @@ export function YourTeamToday({ items }: YourTeamTodayProps) {
               className="flex items-center gap-3 rounded-md p-2 transition-colors hover:bg-primary/10"
             >
               {item.teamLogoUrl ? (
-                <Image
-                  src={item.teamLogoUrl}
-                  alt=""
-                  width={24}
-                  height={24}
-                  className="size-6 object-contain"
+                <TeamFlag
+                  team={{
+                    name: item.teamName,
+                    logo_url: item.teamLogoUrl,
+                    code: item.teamName.slice(0, 3),
+                  }}
+                  size="md"
                 />
               ) : null}
               <div className="min-w-0 flex-1">

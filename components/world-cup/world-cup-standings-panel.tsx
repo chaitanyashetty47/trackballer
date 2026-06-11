@@ -1,7 +1,7 @@
 "use client"
 
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import Image from "next/image"
+import { CatalogImage } from "@/components/catalog-image"
 import { useState } from "react"
 
 import {
@@ -147,14 +147,13 @@ export function WorldCupStandingsPanel({
                   <td className={cn(tdClass, "text-left")}>
                     <span className="flex min-w-0 items-center gap-1">
                       {row.logoUrl ? (
-                        <Image
+                        <CatalogImage
                           src={row.logoUrl}
                           alt=""
                           width={flagSize}
                           height={flagSize}
                           className="shrink-0 rounded-sm object-contain"
                           style={{ width: flagSize, height: flagSize }}
-                          unoptimized
                         />
                       ) : (
                         <span

@@ -1,4 +1,4 @@
-import Image from "next/image"
+import { CatalogImage } from "@/components/catalog-image"
 
 type WorldCupPageHeaderProps = {
   logoUrl: string | null
@@ -11,13 +11,12 @@ export function WorldCupPageHeader({ logoUrl, activeRound }: WorldCupPageHeaderP
       <div className="mb-2 flex items-center gap-3">
         <span className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-primary bg-primary/10 text-sm font-bold text-primary">
           {logoUrl ? (
-            <Image
+            <CatalogImage
               src={logoUrl}
               alt=""
               width={40}
               height={40}
               className="size-10 object-contain"
-              unoptimized
             />
           ) : (
             "WC"

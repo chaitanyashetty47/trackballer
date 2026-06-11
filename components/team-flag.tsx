@@ -1,5 +1,4 @@
-import Image from "next/image"
-
+import { CatalogImage } from "@/components/catalog-image"
 import type { TeamSummary } from "@/lib/catalog/types"
 import { cn } from "@/lib/utils"
 
@@ -19,7 +18,7 @@ export function TeamFlag({ team, size = "md", className }: TeamFlagProps) {
 
   if (team.logo_url) {
     return (
-      <Image
+      <CatalogImage
         src={team.logo_url}
         alt=""
         width={px}

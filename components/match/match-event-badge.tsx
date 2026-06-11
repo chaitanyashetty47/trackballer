@@ -1,5 +1,4 @@
-import Image from "next/image"
-
+import { CatalogImage } from "@/components/catalog-image"
 import { cn } from "@/lib/utils"
 
 type MatchEventBadgeProps = {
@@ -35,7 +34,7 @@ function EventBadgePill({
       aria-label={`${count} ${label}${count === 1 ? "" : "s"}`}
     >
       <span className="flex size-4 shrink-0 items-center justify-center">
-        <Image
+        <CatalogImage
           src={iconSrc}
           alt=""
           width={12}
