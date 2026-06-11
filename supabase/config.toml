@@ -1,7 +1,7 @@
-# Penaltyboxd / trackballer — linked to Supabase project cznywzmmqypprsmulxty
+# trackballr — linked to Supabase project oovtjqxxavffzndpyevr
 # https://supabase.com/docs/guides/cli/config
 
-project_id = "cznywzmmqypprsmulxty"
+project_id = "oovtjqxxavffzndpyevr"
 
 [api]
 enabled = true
