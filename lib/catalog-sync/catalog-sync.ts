@@ -60,6 +60,11 @@ export type FixtureDetailStats = {
   };
 };
 
+export type SyncFixtureDetailOptions = {
+  /** Full = lineups + appearances + events. Live = lineups + events only. */
+  scope?: "full" | "live";
+};
+
 const SYNC_LOG = "[catalog-sync]";
 
 function syncLog(
@@ -633,7 +638,11 @@ export class CatalogSync {
    * Sync lineups, appearances, and events for one fixture.
    * Empty lineup response (200 + []) does not delete existing rows.
    */
-  async syncFixtureDetail(fixtureId: number): Promise<FixtureDetailStats> {
+  async syncFixtureDetail(
+    fixtureId: number,
+    options: SyncFixtureDetailOptions = {},
+  ): Promise<FixtureDetailStats> {
+    const scope = options.scope ?? "full";
     const now = new Date().toISOString();
     const result: FixtureDetailStats = {
       fixtureId,
@@ -650,11 +659,15 @@ export class CatalogSync {
       .eq("id", fixtureId)
       .maybeSingle();
 
-    syncLog(`fixture ${fixtureId} — fetching API (lineups → players → events)`, {
-      statusShort: fxMeta?.status_short ?? null,
-      roundName: fxMeta?.round_name ?? null,
-      kickoffAt: fxMeta?.kickoff_at ?? null,
-    });
+    syncLog(
+      `fixture ${fixtureId} — fetching API (${scope === "live" ? "lineups → events" : "lineups → players → events"})`,
+      {
+        scope,
+        statusShort: fxMeta?.status_short ?? null,
+        roundName: fxMeta?.round_name ?? null,
+        kickoffAt: fxMeta?.kickoff_at ?? null,
+      },
+    );
 
     const lineupsRes = await this.api.getLineups(fixtureId);
     syncLog(`fixture ${fixtureId} — API lineups`, {
@@ -662,11 +675,16 @@ export class CatalogSync {
       quota: this.api.lastQuota,
     });
 
-    const playersRes = await this.api.getFixturePlayers(fixtureId);
-    syncLog(`fixture ${fixtureId} — API players`, {
-      ...apiMeta(playersRes),
-      quota: this.api.lastQuota,
-    });
+    const playersRes =
+      scope === "full"
+        ? await this.api.getFixturePlayers(fixtureId)
+        : null;
+    if (playersRes) {
+      syncLog(`fixture ${fixtureId} — API players`, {
+        ...apiMeta(playersRes),
+        quota: this.api.lastQuota,
+      });
+    }
 
     const eventsRes = await this.api.getFixtureEvents(fixtureId);
     syncLog(`fixture ${fixtureId} — API events`, {
@@ -675,7 +693,7 @@ export class CatalogSync {
     });
 
     const lineups = lineupsRes.response;
-    const playerBlocks = playersRes.response;
+    const playerBlocks = playersRes?.response ?? [];
     const events = eventsRes.response;
 
     result.apiResponseCounts = {
@@ -739,7 +757,7 @@ export class CatalogSync {
       });
     }
 
-    if (playerBlocks.length > 0) {
+    if (scope === "full" && playerBlocks.length > 0) {
       const { appearances, playerStubs } = mapAppearances(
         fixtureId,
         playerBlocks,
@@ -780,7 +798,7 @@ export class CatalogSync {
         rows: result.appearances,
         appearances_synced_at: now,
       });
-    } else {
+    } else if (scope === "full") {
       syncLog(`fixture ${fixtureId} — skipped appearances (API returned empty)`, {
         note: "appearances_synced_at not set",
       });

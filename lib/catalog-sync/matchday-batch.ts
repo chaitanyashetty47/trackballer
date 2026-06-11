@@ -1,5 +1,6 @@
 import type { CatalogSync } from "@/lib/catalog-sync/catalog-sync";
-import { DEFAULT_LEAGUE_ID, DEFAULT_SEASON_YEAR, TERMINAL_STATUSES } from "@/lib/catalog-sync/constants";
+import { DEFAULT_LEAGUE_ID, DEFAULT_SEASON_YEAR } from "@/lib/catalog-sync/constants";
+import { planMatchdaySync } from "@/lib/catalog-sync/matchday-sync-plan";
 import { upsertApiFixtureBatch } from "@/lib/catalog-sync/upsert-api-fixtures";
 
 export type MatchdayBatchOptions = {
@@ -16,11 +17,13 @@ export type MatchdayBatchStats = {
   windowTo: string;
   candidatesInWindow: number;
   batchRefreshed: number;
+  liveSnapshotSynced: number;
+  liveSnapshotFailed: number;
   detailSynced: number;
   detailFailed: number;
   detailRemaining: number;
   syncedFixtureIds: number[];
-  failures: Array<{ fixtureId: number; error: string }>;
+  failures: Array<{ fixtureId: number; error: string; phase: "live" | "detail" }>;
 };
 
 /** UTC bounds: start of yesterday through end of today. */
@@ -48,7 +51,8 @@ function chunk<T>(arr: T[], size: number): T[][] {
 }
 
 /**
- * Job 2 — refresh today/yesterday fixtures from API, then detail-sync terminals still pending.
+ * Job 2 — refresh today/yesterday fixtures from API, sync live lineups/goals,
+ * then full detail for terminals still pending.
  */
 export async function syncMatchdayBatch(
   sync: CatalogSync,
@@ -95,15 +99,8 @@ export async function syncMatchdayBatch(
 
   if (refreshError) throw refreshError;
 
-  const needsDetail: number[] = [];
-  for (const fx of afterRefresh ?? []) {
-    if (!TERMINAL_STATUSES.has(fx.status_short)) continue;
-    if (!fx.lineups_synced_at || !fx.appearances_synced_at) {
-      needsDetail.push(fx.id);
-    }
-  }
+  const plan = planMatchdaySync(afterRefresh ?? [], limit);
 
-  const batch = needsDetail.slice(0, limit);
   const stats: MatchdayBatchStats = {
     leagueId,
     seasonYear,
@@ -111,22 +108,40 @@ export async function syncMatchdayBatch(
     windowTo: to,
     candidatesInWindow: candidateIds.length,
     batchRefreshed,
+    liveSnapshotSynced: 0,
+    liveSnapshotFailed: 0,
     detailSynced: 0,
     detailFailed: 0,
-    detailRemaining: Math.max(0, needsDetail.length - batch.length),
+    detailRemaining: plan.fullDetailRemaining,
     syncedFixtureIds: [],
     failures: [],
   };
 
-  for (const fixtureId of batch) {
+  for (const fixtureId of plan.liveSnapshotIds) {
     try {
-      await sync.syncFixtureDetail(fixtureId);
+      await sync.syncFixtureDetail(fixtureId, { scope: "live" });
+      stats.liveSnapshotSynced += 1;
+      stats.syncedFixtureIds.push(fixtureId);
+    } catch (err) {
+      stats.liveSnapshotFailed += 1;
+      stats.failures.push({
+        fixtureId,
+        phase: "live",
+        error: err instanceof Error ? err.message : "Unknown error",
+      });
+    }
+  }
+
+  for (const fixtureId of plan.fullDetailIds) {
+    try {
+      await sync.syncFixtureDetail(fixtureId, { scope: "full" });
       stats.detailSynced += 1;
       stats.syncedFixtureIds.push(fixtureId);
     } catch (err) {
       stats.detailFailed += 1;
       stats.failures.push({
         fixtureId,
+        phase: "detail",
         error: err instanceof Error ? err.message : "Unknown error",
       });
     }
