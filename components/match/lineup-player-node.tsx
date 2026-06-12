@@ -1,7 +1,7 @@
 "use client"
 
 import { PlayerAvatar } from "@/components/player-avatar"
-import { MatchEventBadge } from "@/components/match/match-event-badge"
+import { MatchCardBadge, MatchEventBadge } from "@/components/match/match-event-badge"
 import { RatingChip } from "@/components/rating/rating-chip"
 import type { MatchLineupPlayer } from "@/lib/match/types"
 import { cn } from "@/lib/utils"
@@ -66,6 +66,8 @@ export function LineupPlayerNode({
           side="right"
           layout="corner"
         />
+        <MatchCardBadge kind="red" show={player.redCardCount > 0} side="left" />
+        <MatchCardBadge kind="yellow" show={player.yellowCardCount > 0} side="right" />
       </span>
       <RatingChip
         value={player.communityAvg}

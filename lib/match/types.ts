@@ -28,6 +28,10 @@ export type MatchLineupPlayer = {
   goalCount: number
   /** Assists in this match (from fixture_events). */
   assistCount: number
+  /** Yellow cards in this match (from fixture_events). */
+  yellowCardCount: number
+  /** Red cards in this match, including second yellow (from fixture_events). */
+  redCardCount: number
 }
 
 export type MatchCoach = {
@@ -57,6 +61,18 @@ export type MatchGoalScorers = {
   away: MatchGoalEntry[]
 }
 
+export type MatchRedCardEntry = {
+  playerId: number
+  displayName: string
+  minute: number
+  extraMinute: number | null
+}
+
+export type MatchRedCards = {
+  home: MatchRedCardEntry[]
+  away: MatchRedCardEntry[]
+}
+
 export type PenaltyKick = {
   side: PitchSide
   playerId: number
@@ -83,6 +99,7 @@ export type MatchDetail = {
   fixture: FixtureWithTeams
   competitionLabel: string | null
   goalScorers: MatchGoalScorers
+  redCards: MatchRedCards
   penaltyShootout: PenaltyShootout | null
   ratingsUnlocked: boolean
   hasLineups: boolean

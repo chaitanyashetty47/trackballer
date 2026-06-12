@@ -4,8 +4,10 @@ import { FIXTURE_TEAM_SELECT, mapFixtureRow } from "@/lib/catalog/fixtures"
 import { buildCompetitionLabel } from "@/lib/match/competition-label"
 import { buildFormationRows, formationLabel } from "@/lib/match/formation"
 import { parseGridSlot } from "@/lib/match/lineup-position"
+import { buildCardCountsMap } from "@/lib/match/card-counts"
 import { buildGoalAssistCountsMap } from "@/lib/match/goal-assist-counts"
 import { buildMatchGoalScorers } from "@/lib/match/match-goals"
+import { buildMatchRedCards } from "@/lib/match/match-red-cards"
 import { buildPenaltyShootout } from "@/lib/match/penalty-shootout"
 import { buildSubOnInfoMap, type SubOnInfo } from "@/lib/match/sub-on-minutes"
 import type { MatchCoach, MatchDetail, MatchLineupPlayer } from "@/lib/match/types"
@@ -130,6 +132,7 @@ export const getMatchDetail = cache(
       seasonYear,
     )
     const goalScorers = buildMatchGoalScorers(events, fixture.home_team_id, playerNames)
+    const redCards = buildMatchRedCards(events, fixture.home_team_id, playerNames)
     const penaltyShootout =
       fixture.status_short === "PEN"
         ? buildPenaltyShootout(events, fixture.home_team_id, playerNames)
@@ -147,6 +150,7 @@ export const getMatchDetail = cache(
 
     const subOnInfoByPlayer = buildSubOnInfoMap(events)
     const goalAssistByPlayer = buildGoalAssistCountsMap(events)
+    const cardCountsByPlayer = buildCardCountsMap(events)
 
     const coaches = mapCoaches(
       coachRows ?? [],
@@ -197,6 +201,7 @@ export const getMatchDetail = cache(
         subOnInfoByPlayer,
         playerNameById,
         goalAssistByPlayer,
+        cardCountsByPlayer,
       )
       if (!mapped) continue
 
@@ -229,6 +234,7 @@ export const getMatchDetail = cache(
       fixture,
       competitionLabel,
       goalScorers,
+      redCards,
       penaltyShootout,
       ratingsUnlocked: fixture.ratings_unlocked_at != null,
       hasLineups: starters.length > 0,
@@ -354,6 +360,7 @@ function mapLineupPlayer(
   subOnInfoByPlayer: Map<number, SubOnInfo>,
   playerNameById: Map<number, string>,
   goalAssistByPlayer: Map<number, { goals: number; assists: number }>,
+  cardCountsByPlayer: Map<number, { yellowCards: number; redCards: number }>,
 ): MatchLineupPlayer | null {
   const player = row.players
   if (!player) return null
@@ -372,6 +379,7 @@ function mapLineupPlayer(
       : null
 
   const contributions = goalAssistByPlayer.get(row.player_id)
+  const cards = cardCountsByPlayer.get(row.player_id)
 
   return {
     playerId: row.player_id,
@@ -393,5 +401,7 @@ function mapLineupPlayer(
     userRating: userRatingByPlayer.get(row.player_id) ?? null,
     goalCount: contributions?.goals ?? 0,
     assistCount: contributions?.assists ?? 0,
+    yellowCardCount: cards?.yellowCards ?? 0,
+    redCardCount: cards?.redCards ?? 0,
   }
 }

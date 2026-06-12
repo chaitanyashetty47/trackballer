@@ -1,5 +1,6 @@
 import { CatalogImage } from "@/components/catalog-image"
 import { MatchKickoffDateTime } from "@/components/match/match-kickoff-datetime"
+import { MatchRedCardsRow } from "@/components/match/match-red-cards-row"
 import { MatchScorersRow } from "@/components/match/match-scorers-row"
 import { TeamFlag } from "@/components/team-flag"
 import type { FixtureWithTeams } from "@/lib/catalog/types"
@@ -9,7 +10,7 @@ import { cn } from "@/lib/utils"
 
 type MatchHeroProps = {
   fixture: FixtureWithTeams
-  detail: Pick<MatchDetail, "competitionLabel" | "goalScorers">
+  detail: Pick<MatchDetail, "competitionLabel" | "goalScorers" | "redCards">
   heroScore: MatchHeroScore
   className?: string
 }
@@ -128,6 +129,14 @@ export function MatchHero({ fixture, detail, heroScore, className }: MatchHeroPr
         </div>
 
         <MatchScorersRow scorers={detail.goalScorers} className="mt-1" />
+        <MatchRedCardsRow
+          redCards={detail.redCards}
+          className={
+            detail.goalScorers.home.length > 0 || detail.goalScorers.away.length > 0
+              ? "border-t-0 pt-2"
+              : undefined
+          }
+        />
       </div>
     </section>
   )

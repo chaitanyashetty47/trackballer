@@ -24,6 +24,8 @@ function player(overrides: Partial<MatchLineupPlayer> = {}): MatchLineupPlayer {
     userRating: null,
     goalCount: 0,
     assistCount: 0,
+    yellowCardCount: 0,
+    redCardCount: 0,
     ...overrides,
   }
 }

@@ -91,6 +91,70 @@ export function MatchEventBadge({
 const GOAL_ICON = "/football-svgrepo-com.svg"
 const ASSIST_ICON = "/american-football-black-shoe-svgrepo-com.svg"
 
+function RedCardIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 10 14" className={cn("h-3.5 w-2.5 shrink-0", className)} aria-hidden>
+      <rect x="0" y="0" width="10" height="14" rx="1" fill="#DC2626" />
+    </svg>
+  )
+}
+
+function YellowCardIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 10 14" className={cn("h-3.5 w-2.5 shrink-0", className)} aria-hidden>
+      <rect x="0" y="0" width="10" height="14" rx="1" fill="#EAB308" />
+    </svg>
+  )
+}
+
+function CardBadgePill({
+  kind,
+  label,
+}: {
+  kind: "red" | "yellow"
+  label: string
+}) {
+  return (
+    <span
+      className="flex size-5 items-center justify-center rounded-sm border border-border bg-card shadow-sm"
+      aria-label={label}
+    >
+      {kind === "red" ? <RedCardIcon /> : <YellowCardIcon />}
+    </span>
+  )
+}
+
+/** Red or yellow card marker on the bottom corners of a lineup puck. */
+export function MatchCardBadge({
+  kind,
+  show,
+  side,
+  className,
+}: {
+  kind: "red" | "yellow"
+  show: boolean
+  side: "left" | "right"
+  className?: string
+}) {
+  if (!show) return null
+
+  const label = kind === "red" ? "Red card" : "Yellow card"
+  const cornerPosition =
+    side === "right"
+      ? "top-auto bottom-0.5 left-[calc(100%-6px)]"
+      : "top-auto bottom-0.5 right-[calc(100%-6px)]"
+
+  return (
+    <span className={cn("pointer-events-none absolute z-20", cornerPosition, className)}>
+      <CardBadgePill kind={kind} label={label} />
+    </span>
+  )
+}
+
+export function MatchRedCardIcon({ className }: { className?: string }) {
+  return <RedCardIcon className={className} />
+}
+
 /** Inline goal then assist, for bench/sub rows (left of sub-on minute). */
 export function MatchContributionBadgesInline({
   goalCount,
