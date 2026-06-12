@@ -73,6 +73,42 @@ describe("buildMatchGoalScorers", () => {
     expect(scorers.home[0]?.minute).toBe(23)
   })
 
+  it("drops goals overturned by VAR when cancellation event is present", () => {
+    const scorers = buildMatchGoalScorers(
+      [
+        {
+          type: "Goal",
+          detail: "Normal Goal",
+          minute: 54,
+          extra_minute: null,
+          player_id: 99,
+          team_id: HOME,
+        },
+        {
+          type: "Var",
+          detail: "Goal cancelled",
+          minute: 54,
+          extra_minute: null,
+          player_id: 99,
+          team_id: HOME,
+        },
+        {
+          type: "Goal",
+          detail: "Normal Goal",
+          minute: 72,
+          extra_minute: null,
+          player_id: 99,
+          team_id: HOME,
+        },
+      ],
+      HOME,
+      names,
+    )
+
+    expect(scorers.home).toHaveLength(1)
+    expect(scorers.home[0]?.minute).toBe(72)
+  })
+
   it("includes own goals with OG marker", () => {
     const scorers = buildMatchGoalScorers(
       [
@@ -153,6 +189,6 @@ describe("buildMatchGoalScorers", () => {
 
     const grouped = groupScorersByPlayer(scorers.home)
     expect(grouped).toHaveLength(1)
-    expect(formatGroupedScorerLine(grouped[0]!)).toBe("L. Messi 23' (Pen), 108'")
+    expect(formatGroupedScorerLine(grouped[0]!)).toBe("L. Messi 23' (P), 108'")
   })
 })

@@ -1,3 +1,5 @@
+import { filterVarCancelledGoals } from "@/lib/match/var-goal-events"
+
 export type GoalEventRow = {
   player_id: number | null
   assist_player_id: number | null
@@ -51,7 +53,7 @@ export function buildGoalAssistCountsMap(
 ): Map<number, PlayerContributionCounts> {
   const map = new Map<number, PlayerContributionCounts>()
 
-  for (const event of events) {
+  for (const event of filterVarCancelledGoals(events)) {
     if (event.type !== "Goal") continue
     if (!isCountedMatchGoal(event.detail, event.minute, event.extra_minute)) continue
 

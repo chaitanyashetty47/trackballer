@@ -1,4 +1,9 @@
 import { isCountedMatchGoal, isPenaltyShootoutGoal } from "@/lib/match/goal-assist-counts"
+import {
+  isInGamePenaltyDetail,
+  isOwnGoalDetail,
+} from "@/lib/match/goal-event-detail"
+import { filterVarCancelledGoals } from "@/lib/match/var-goal-events"
 import type { MatchGoalEntry, MatchGoalScorers, MatchGroupedScorer } from "@/lib/match/types"
 
 export type MatchGoalEventRow = {
@@ -20,13 +25,11 @@ function shortDisplayName(name: string): string {
 }
 
 function isInGamePenalty(detail: string | null): boolean {
-  if (!detail) return false
-  const normalized = detail.toLowerCase()
-  return normalized.includes("penalty") && !normalized.includes("missed")
+  return isInGamePenaltyDetail(detail)
 }
 
 function isOwnGoal(detail: string | null): boolean {
-  return detail?.toLowerCase().includes("own goal") ?? false
+  return isOwnGoalDetail(detail)
 }
 
 /** Hero scorers row: open play, in-game PKs, and own goals — not shootout or misses. */
@@ -53,7 +56,7 @@ export function formatGoalMinuteLabel(minute: number, extraMinute: number | null
 
 function goalAnnotation(entry: MatchGoalEntry): string {
   if (entry.isOwnGoal) return " (OG)"
-  if (entry.isPenalty) return " (Pen)"
+  if (entry.isPenalty) return " (P)"
   return ""
 }
 
@@ -66,7 +69,7 @@ export function buildMatchGoalScorers(
   const home: MatchGoalEntry[] = []
   const away: MatchGoalEntry[] = []
 
-  const sorted = [...events].sort((a, b) => {
+  const sorted = [...filterVarCancelledGoals(events)].sort((a, b) => {
     if (a.minute !== b.minute) return a.minute - b.minute
     return (a.extra_minute ?? 0) - (b.extra_minute ?? 0)
   })

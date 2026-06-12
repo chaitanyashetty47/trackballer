@@ -9,6 +9,7 @@ import type {
   ApiSquadItem,
   ApiTeamRef,
 } from "@/lib/api-football/types";
+import { filterVarCancelledGoals } from "@/lib/match/var-goal-events";
 import { TERMINAL_STATUSES } from "./constants";
 
 type TeamInsert = Database["public"]["Tables"]["teams"]["Insert"];
@@ -244,7 +245,7 @@ export function mapEvents(
   fixtureId: number,
   events: ApiFixtureEventItem[],
 ): EventInsert[] {
-  return events.map((e) => ({
+  const rows = events.map((e) => ({
     fixture_id: fixtureId,
     team_id: e.team.id,
     player_id: e.player.id ?? null,
@@ -254,4 +255,6 @@ export function mapEvents(
     type: e.type,
     detail: e.detail,
   }));
+
+  return filterVarCancelledGoals(rows);
 }
