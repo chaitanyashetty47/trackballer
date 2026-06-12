@@ -3,12 +3,13 @@ import { isLiveMatchStatus, TERMINAL_STATUSES } from "@/lib/catalog-sync/constan
 export type MatchdayFixtureRow = {
   id: number;
   status_short: string;
+  kickoff_at: string;
   lineups_synced_at: string | null;
   appearances_synced_at: string | null;
 };
 
 export type MatchdaySyncPlan = {
-  /** Lineups + events (2 API calls). NS or in-play when lineups not yet in DB. */
+  /** Lineups + events (2 API calls). In-play only when lineups not yet in DB. */
   liveSnapshotIds: number[];
   /** Events only (1 API call). In-play once lineups are already synced. */
   eventsOnlyIds: number[];
@@ -39,11 +40,6 @@ export function planMatchdaySync(
       } else {
         liveSnapshotIds.push(fx.id);
       }
-      continue;
-    }
-
-    if (fx.status_short === "NS" && !fx.lineups_synced_at) {
-      liveSnapshotIds.push(fx.id);
     }
   }
 
@@ -55,4 +51,20 @@ export function planMatchdaySync(
     fullDetailIds,
     fullDetailRemaining: Math.max(0, needsFullDetail.length - fullDetailIds.length),
   };
+}
+
+/**
+ * Score refresh via GET /fixtures?ids= — live matches only, plus NS/TBD after kickoff
+ * when DB status may still be stale.
+ */
+export function shouldBatchRefreshFixture(
+  fx: Pick<MatchdayFixtureRow, "status_short" | "kickoff_at">,
+  now = new Date(),
+): boolean {
+  if (isLiveMatchStatus(fx.status_short)) return true;
+  if (TERMINAL_STATUSES.has(fx.status_short)) return false;
+  if (fx.status_short === "NS" || fx.status_short === "TBD") {
+    return new Date(fx.kickoff_at) <= now;
+  }
+  return false;
 }

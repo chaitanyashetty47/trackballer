@@ -1,6 +1,9 @@
 import type { CatalogSync } from "@/lib/catalog-sync/catalog-sync";
 import { DEFAULT_LEAGUE_ID, DEFAULT_SEASON_YEAR } from "@/lib/catalog-sync/constants";
-import { planMatchdaySync } from "@/lib/catalog-sync/matchday-sync-plan";
+import {
+  planMatchdaySync,
+  shouldBatchRefreshFixture,
+} from "@/lib/catalog-sync/matchday-sync-plan";
 import { upsertApiFixtureBatch } from "@/lib/catalog-sync/upsert-api-fixtures";
 
 export type MatchdayBatchOptions = {
@@ -70,7 +73,7 @@ export async function syncMatchdayBatch(
 
   const { data: candidates, error: listError } = await sync.db
     .from("fixtures")
-    .select("id, status_short, lineups_synced_at, appearances_synced_at")
+    .select("id, status_short, kickoff_at, lineups_synced_at, appearances_synced_at")
     .eq("season_id", seasonId)
     .gte("kickoff_at", from)
     .lt("kickoff_at", to)
@@ -78,10 +81,13 @@ export async function syncMatchdayBatch(
 
   if (listError) throw listError;
 
-  const candidateIds = (candidates ?? []).map((f) => f.id);
+  const rows = candidates ?? [];
+  const batchRefreshIds = rows
+    .filter((fx) => shouldBatchRefreshFixture(fx))
+    .map((fx) => fx.id);
   let batchRefreshed = 0;
 
-  for (const idChunk of chunk(candidateIds, 20)) {
+  for (const idChunk of chunk(batchRefreshIds, 20)) {
     const res = await sync.api.getFixturesByIds(idChunk);
     const items = res.response;
     if (items.length > 0) {
@@ -94,21 +100,21 @@ export async function syncMatchdayBatch(
 
   const { data: afterRefresh, error: refreshError } = await sync.db
     .from("fixtures")
-    .select("id, status_short, lineups_synced_at, appearances_synced_at")
+    .select("id, status_short, kickoff_at, lineups_synced_at, appearances_synced_at")
     .eq("season_id", seasonId)
     .gte("kickoff_at", from)
     .lt("kickoff_at", to);
 
   if (refreshError) throw refreshError;
 
-  const plan = planMatchdaySync(afterRefresh ?? [], limit);
+  const plan = planMatchdaySync(afterRefresh ?? rows, limit);
 
   const stats: MatchdayBatchStats = {
     leagueId,
     seasonYear,
     windowFrom: from,
     windowTo: to,
-    candidatesInWindow: candidateIds.length,
+    candidatesInWindow: rows.length,
     batchRefreshed,
     liveSnapshotSynced: 0,
     liveSnapshotFailed: 0,
